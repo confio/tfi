@@ -1,10 +1,15 @@
 [workspace]
 members = ["packages/*", "contracts/*"]
 
-[profile.release.package.terraswap]
-opt-level = 3
-debug = false
-debug-assertions = false
+[profile.release.package.tfi-factory]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.tfi-router]
+codegen-units = 1
+incremental = false
+
+[profile.release.package.tfi-pair]
 codegen-units = 1
 incremental = false
 
@@ -12,3 +17,7 @@ incremental = false
 rpath = false
 lto = true
 overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
+panic = 'abort'
