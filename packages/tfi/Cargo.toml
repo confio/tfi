@@ -1,6 +1,6 @@
 [package]
 name = "tfi"
-version = "2.2.0"
+version = "0.0.0"
 authors = ["Terraform Labs, PTE."]
 edition = "2018"
 description = "Common tfi types"
