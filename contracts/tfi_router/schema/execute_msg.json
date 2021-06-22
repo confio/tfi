@@ -218,10 +218,10 @@
         {
           "type": "object",
           "required": [
-            "terra_swap"
+            "tfi"
           ],
           "properties": {
-            "terra_swap": {
+            "tfi": {
               "type": "object",
               "required": [
                 "ask_asset_info",
