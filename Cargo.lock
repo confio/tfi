@@ -548,17 +548,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terra-cosmwasm"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f115874fd59c62916d709a5de51072ddfd91b0278e35e0252522d9c103392967"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "tfi"
 version = "0.0.0"
 dependencies = [
@@ -628,8 +617,8 @@ dependencies = [
  "integer-sqrt",
  "schemars",
  "serde",
- "terra-cosmwasm",
  "tfi",
+ "tfi-mocks",
 ]
 
 [[package]]
