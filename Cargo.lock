@@ -621,22 +621,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terraswap-token"
-version = "0.0.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus",
- "cw0",
- "cw2",
- "cw20",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
