@@ -283,7 +283,7 @@ fn test_invalid_operations() {
     // uluna output
     assert_eq!(
         true,
-        assert_operations(&vec![
+        assert_operations(&[
             SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
@@ -307,7 +307,7 @@ fn test_invalid_operations() {
     // asset0002 output
     assert_eq!(
         true,
-        assert_operations(&vec![
+        assert_operations(&[
             SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
@@ -339,7 +339,7 @@ fn test_invalid_operations() {
     // multiple output token types error
     assert_eq!(
         true,
-        assert_operations(&vec![
+        assert_operations(&[
             SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
