@@ -1,24 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AssetInfo",
-  "description": "AssetInfo contract_addr is usually passed from the cw20 hook so we can trust the contract_addr is properly validated.",
+  "title": "Denom",
   "anyOf": [
     {
       "type": "object",
       "required": [
-        "token"
+        "native"
       ],
       "properties": {
-        "token": {
-          "type": "object",
-          "required": [
-            "contract_addr"
-          ],
-          "properties": {
-            "contract_addr": {
-              "$ref": "#/definitions/Addr"
-            }
-          }
+        "native": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -26,19 +17,11 @@
     {
       "type": "object",
       "required": [
-        "native_token"
+        "cw20"
       ],
       "properties": {
-        "native_token": {
-          "type": "object",
-          "required": [
-            "denom"
-          ],
-          "properties": {
-            "denom": {
-              "type": "string"
-            }
-          }
+        "cw20": {
+          "$ref": "#/definitions/Addr"
         }
       },
       "additionalProperties": false

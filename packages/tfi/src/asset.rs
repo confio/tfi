@@ -1,11 +1,32 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Coin, Uint128};
-use cw20::{Balance, Cw20CoinVerified};
+use cosmwasm_std::{to_binary, Addr, BankMsg, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
+use cw20::{Balance, Cw20CoinVerified, Cw20ExecuteMsg};
+use std::fmt;
+use std::fmt::Formatter;
 
 pub type Asset = Balance;
 pub type AssetInfo = Denom;
+
+pub fn send_asset(asset: Asset, to_addr: Addr) -> StdResult<CosmosMsg> {
+    match asset {
+        Balance::Native(bal) => Ok(BankMsg::Send {
+            to_address: to_addr.into(),
+            amount: bal.0,
+        }
+        .into()),
+        Balance::Cw20(cw20) => Ok(WasmMsg::Execute {
+            contract_addr: cw20.address.into(),
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: to_addr.into(),
+                amount: cw20.amount,
+            })?,
+            send: vec![],
+        }
+        .into()),
+    }
+}
 
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -91,7 +112,20 @@ pub enum Denom {
     Cw20(Addr),
 }
 
+impl fmt::Display for Denom {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Native(denom) => write!(f, "{}", denom),
+            Self::Cw20(addr) => write!(f, "{}", addr),
+        }
+    }
+}
+
 impl Denom {
+    pub fn is_native_token(&self) -> bool {
+        matches!(self, Denom::Native(_))
+    }
+
     pub fn is_empty(&self) -> bool {
         match self {
             Denom::Native(string) => string.is_empty(),

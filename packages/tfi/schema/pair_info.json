@@ -11,7 +11,7 @@
     "asset_infos": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/AssetInfo"
+        "$ref": "#/definitions/Denom"
       },
       "maxItems": 2,
       "minItems": 2
@@ -28,25 +28,16 @@
       "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
       "type": "string"
     },
-    "AssetInfo": {
-      "description": "AssetInfo contract_addr is usually passed from the cw20 hook so we can trust the contract_addr is properly validated.",
+    "Denom": {
       "anyOf": [
         {
           "type": "object",
           "required": [
-            "token"
+            "native"
           ],
           "properties": {
-            "token": {
-              "type": "object",
-              "required": [
-                "contract_addr"
-              ],
-              "properties": {
-                "contract_addr": {
-                  "$ref": "#/definitions/Addr"
-                }
-              }
+            "native": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -54,19 +45,11 @@
         {
           "type": "object",
           "required": [
-            "native_token"
+            "cw20"
           ],
           "properties": {
-            "native_token": {
-              "type": "object",
-              "required": [
-                "denom"
-              ],
-              "properties": {
-                "denom": {
-                  "type": "string"
-                }
-              }
+            "cw20": {
+              "$ref": "#/definitions/Addr"
             }
           },
           "additionalProperties": false
