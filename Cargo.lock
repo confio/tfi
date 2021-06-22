@@ -559,7 +559,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "terraswap"
+name = "tfi"
 version = "2.2.0"
 dependencies = [
  "cosmwasm-schema",
@@ -572,7 +572,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "terraswap-factory"
+name = "tfi-factory"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-schema",
@@ -582,11 +582,11 @@ dependencies = [
  "protobuf",
  "schemars",
  "serde",
- "terraswap",
+ "tfi",
 ]
 
 [[package]]
-name = "terraswap-pair"
+name = "tfi-pair"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-schema",
@@ -600,12 +600,12 @@ dependencies = [
  "schemars",
  "serde",
  "terra-cosmwasm",
- "terraswap",
+ "tfi",
  "thiserror",
 ]
 
 [[package]]
-name = "terraswap-router"
+name = "tfi-router"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-schema",
@@ -617,7 +617,7 @@ dependencies = [
  "schemars",
  "serde",
  "terra-cosmwasm",
- "terraswap",
+ "tfi",
 ]
 
 [[package]]

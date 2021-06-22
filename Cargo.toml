@@ -1,15 +1,15 @@
 [workspace]
 members = ["packages/*", "contracts/*"]
 
-[profile.release.package.terraswap-factory]
+[profile.release.package.tfi-factory]
 codegen-units = 1
 incremental = false
 
-[profile.release.package.terraswap-router]
+[profile.release.package.tfi-router]
 codegen-units = 1
 incremental = false
 
-[profile.release.package.terraswap-pair]
+[profile.release.package.tfi-pair]
 codegen-units = 1
 incremental = false
 

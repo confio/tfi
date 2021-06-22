@@ -2,7 +2,7 @@
 
 Components to build out Regulated DeFi for [Tgrade blockchain](https://tgrade.finance)
 
-* AMM (ported from TerraSwap)
+* AMM (ported from tfi)
 * Whitelisted Token
 
 ## Contracts
@@ -11,9 +11,9 @@ TODO
 
 | Name                                               | Description                                  |
 | -------------------------------------------------- | -------------------------------------------- |
-| [`terraswap_factory`](contracts/terraswap_factory) |                                              |
-| [`terraswap_pair`](contracts/terraswap_pair)       |                                              |
-| [`terraswap_router`](contracts/terraswap_router)   |                                              |
+| [`tfi_factory`](contracts/tfi_factory) |                                              |
+| [`tfi_pair`](contracts/tfi_pair)       |                                              |
+| [`tfi_router`](contracts/tfi_router)   |                                              |
 
 ## Running this contract
 
