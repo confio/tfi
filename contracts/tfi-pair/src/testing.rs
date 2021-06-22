@@ -4,7 +4,6 @@ use crate::contract::{
 };
 use crate::error::ContractError;
 use crate::math::{decimal_multiplication, reverse_decimal};
-use crate::mock_querier::mock_dependencies;
 
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -18,6 +17,8 @@ use tfi::pair::{
     SimulationResponse,
 };
 use tfi::token::InstantiateMsg as TokenInstantiateMsg;
+use tfi::mock_querier::mock_dependencies;
+
 
 #[test]
 fn proper_initialization() {
@@ -495,10 +496,6 @@ fn withdraw_liquidity() {
         amount: Uint128(100u128),
     }]);
 
-    deps.querier.with_tax(
-        Decimal::zero(),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
     deps.querier.with_token_balances(&[
         (
             &"liquidity0000".to_string(),
@@ -615,11 +612,6 @@ fn try_native_to_token() {
         denom: "uusd".to_string(),
         amount: collateral_pool_amount + offer_amount, /* user deposit must be pre-applied */
     }]);
-
-    deps.querier.with_tax(
-        Decimal::zero(),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
 
     deps.querier.with_token_balances(&[
         (
@@ -795,10 +787,6 @@ fn try_token_to_native() {
         denom: "uusd".to_string(),
         amount: collateral_pool_amount,
     }]);
-    deps.querier.with_tax(
-        Decimal::percent(1),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
     deps.querier.with_token_balances(&[
         (
             &"liquidity0000".to_string(),
@@ -1041,35 +1029,6 @@ fn test_max_spread() {
         Uint128::from(10000u128),
     )
     .unwrap();
-}
-
-#[test]
-fn test_deduct() {
-    let mut deps = mock_dependencies(&[]);
-
-    let tax_rate = Decimal::percent(2);
-    let tax_cap = Uint128::from(1_000_000u128);
-    deps.querier.with_tax(
-        Decimal::percent(2),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
-
-    let amount = Uint128(1_000_000_000u128);
-    let expected_after_amount = std::cmp::max(
-        amount.checked_sub(amount * tax_rate).unwrap(),
-        amount.checked_sub(tax_cap).unwrap(),
-    );
-
-    let after_amount = (Asset {
-        info: AssetInfo::NativeToken {
-            denom: "uusd".to_string(),
-        },
-        amount,
-    })
-    .deduct_tax()
-    .unwrap();
-
-    assert_eq!(expected_after_amount, after_amount.amount);
 }
 
 #[test]

@@ -36,5 +36,4 @@ protobuf = { version = "2", features = ["with-bytes"] }
 
 [dev-dependencies]
 cosmwasm-schema = "0.14.0"
-terra-cosmwasm = { version = "2.0.0" }
 cosmwasm-storage = { version = "0.14.0" }

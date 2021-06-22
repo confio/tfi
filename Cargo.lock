@@ -568,6 +568,7 @@ dependencies = [
  "cw20",
  "schemars",
  "serde",
+ "tfi-mocks",
 ]
 
 [[package]]
@@ -579,6 +580,18 @@ dependencies = [
  "cosmwasm-storage",
  "cw-storage-plus",
  "protobuf",
+ "schemars",
+ "serde",
+ "tfi",
+]
+
+[[package]]
+name = "tfi-mocks"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
  "schemars",
  "serde",
  "tfi",
@@ -598,7 +611,6 @@ dependencies = [
  "protobuf",
  "schemars",
  "serde",
- "terra-cosmwasm",
  "tfi",
  "thiserror",
 ]

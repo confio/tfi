@@ -6,7 +6,4 @@ pub mod router;
 pub mod token;
 
 #[cfg(test)]
-mod mock_querier;
-
-#[cfg(test)]
 mod testing;
