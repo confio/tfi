@@ -202,9 +202,9 @@ impl WasmMockQuerier {
         self.tfi_factory_querier = TfiFactoryQuerier::new(pairs);
     }
 
-    // pub fn with_balance(&mut self, balances: &[(&HumanAddr, &[Coin])]) {
-    //     for (addr, balance) in balances {
-    //         self.base.update_balance(addr, balance.to_vec());
-    //     }
-    // }
+    pub fn with_balance(&mut self, balances: &[(&str, Vec<Coin>)]) {
+        for (addr, balance) in balances {
+            self.base.update_balance(addr.to_string(), balance.clone());
+        }
+    }
 }

@@ -37,3 +37,4 @@ protobuf = { version = "2", features = ["with-bytes"] }
 [dev-dependencies]
 cosmwasm-schema = "0.14.0"
 cosmwasm-storage = { version = "0.14.0" }
+tfi-mocks = { path = "../../packages/mocks", version = "0.0.0"}

@@ -612,6 +612,7 @@ dependencies = [
  "schemars",
  "serde",
  "tfi",
+ "tfi-mocks",
  "thiserror",
 ]
 

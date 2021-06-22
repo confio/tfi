@@ -1,8 +1,6 @@
 use crate::asset::{Asset, AssetInfo};
+use crate::querier::{query_all_balances, query_balance, query_supply, query_token_balance};
 use tfi_mocks::mock_dependencies;
-use crate::querier::{
-    query_all_balances, query_balance, query_supply, query_token_balance,
-};
 
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{to_binary, Addr, BankMsg, Coin, CosmosMsg, Uint128, WasmMsg};
