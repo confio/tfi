@@ -13,7 +13,7 @@ TODO
 | -------------------------------------------------- | -------------------------------------------- |
 | [`terraswap_factory`](contracts/terraswap_factory) |                                              |
 | [`terraswap_pair`](contracts/terraswap_pair)       |                                              |
-| [`terraswap_token`](contracts/terraswap_token)     | CW20 (ERC20 equivalent) token implementation |
+| [`terraswap_router`](contracts/terraswap_router)   |                                              |
 
 ## Running this contract
 
