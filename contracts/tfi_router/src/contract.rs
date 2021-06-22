@@ -216,10 +216,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let state = CONFIG.load(deps.storage)?;
     let resp = ConfigResponse {
-        tfi_factory: deps
-            .api
-            .addr_humanize(&state.tfi_factory)?
-            .to_string(),
+        tfi_factory: deps.api.addr_humanize(&state.tfi_factory)?.to_string(),
     };
 
     Ok(resp)

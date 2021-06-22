@@ -72,16 +72,15 @@ impl WasmMockQuerier {
                 let prefix_pair_info = to_length_prefixed(b"pair_info").to_vec();
 
                 if key.to_vec() == prefix_pair_info {
-                    let pair_info: PairInfo =
-                        match self.tfi_pair_querier.pairs.get(contract_addr) {
-                            Some(v) => v.clone(),
-                            None => {
-                                return SystemResult::Err(SystemError::InvalidRequest {
-                                    error: format!("PairInfo is not found for {}", contract_addr),
-                                    request: key.into(),
-                                })
-                            }
-                        };
+                    let pair_info: PairInfo = match self.tfi_pair_querier.pairs.get(contract_addr) {
+                        Some(v) => v.clone(),
+                        None => {
+                            return SystemResult::Err(SystemError::InvalidRequest {
+                                error: format!("PairInfo is not found for {}", contract_addr),
+                                request: key.into(),
+                            })
+                        }
+                    };
 
                     let api: MockApi = MockApi::default();
                     SystemResult::Ok(ContractResult::from(to_binary(&PairInfoRaw {
