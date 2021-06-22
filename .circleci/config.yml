@@ -39,7 +39,7 @@ jobs:
           name: Unit Tests
           environment:
             RUST_BACKTRACE: 1
-          command: cargo unit-test --locked
+          command: cargo test --locked
       - run:
           name: Build and run schema generator
           command: cargo schema --locked
@@ -75,7 +75,7 @@ jobs:
           name: Unit Tests
           environment:
             RUST_BACKTRACE: 1
-          command: cargo unit-test --locked
+          command: cargo test --locked
       - run:
           name: Build and run schema generator
           command: cargo schema --locked
@@ -111,7 +111,7 @@ jobs:
           name: Unit Tests
           environment:
             RUST_BACKTRACE: 1
-          command: cargo unit-test --locked
+          command: cargo test --locked
       - run:
           name: Build and run schema generator
           command: cargo schema --locked
