@@ -36,42 +36,8 @@ pub struct PairInfo {
     pub liquidity_token: Addr,
 }
 
-// /// AssetInfo contract_addr is usually passed from the cw20 hook
-// /// so we can trust the contract_addr is properly validated.
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-// #[serde(rename_all = "snake_case")]
-// pub enum AssetInfo {
-//     Token { contract_addr: Addr },
-//     NativeToken { denom: String },
-// }
-//
-// impl fmt::Display for AssetInfo {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             AssetInfo::NativeToken { denom } => write!(f, "{}", denom),
-//             AssetInfo::Token { contract_addr } => write!(f, "{}", contract_addr),
-//         }
-//     }
-// }
 //
 // impl AssetInfo {
-//     pub fn to_raw(&self, api: &dyn Api) -> StdResult<AssetInfoRaw> {
-//         match self {
-//             AssetInfo::NativeToken { denom } => Ok(AssetInfoRaw::NativeToken {
-//                 denom: denom.to_string(),
-//             }),
-//             AssetInfo::Token { contract_addr } => Ok(AssetInfoRaw::Token {
-//                 contract_addr: api.addr_canonicalize(contract_addr.as_str())?,
-//             }),
-//         }
-//     }
-//
-//     pub fn is_native_token(&self) -> bool {
-//         match self {
-//             AssetInfo::NativeToken { .. } => true,
-//             AssetInfo::Token { .. } => false,
-//         }
-//     }
 //     pub fn query_pool(&self, querier: &QuerierWrapper, pool_addr: Addr) -> StdResult<Uint128> {
 //         match self {
 //             AssetInfo::Token { contract_addr, .. } => {
@@ -79,25 +45,6 @@ pub struct PairInfo {
 //             }
 //             AssetInfo::NativeToken { denom, .. } => {
 //                 query_balance(querier, pool_addr, denom.to_string())
-//             }
-//         }
-//     }
-//
-//     pub fn equal(&self, asset: &AssetInfo) -> bool {
-//         match self {
-//             AssetInfo::Token { contract_addr, .. } => {
-//                 let self_contract_addr = contract_addr;
-//                 match asset {
-//                     AssetInfo::Token { contract_addr, .. } => self_contract_addr == contract_addr,
-//                     AssetInfo::NativeToken { .. } => false,
-//                 }
-//             }
-//             AssetInfo::NativeToken { denom, .. } => {
-//                 let self_denom = denom;
-//                 match asset {
-//                     AssetInfo::Token { .. } => false,
-//                     AssetInfo::NativeToken { denom, .. } => self_denom == denom,
-//                 }
 //             }
 //         }
 //     }
