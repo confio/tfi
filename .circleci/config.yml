@@ -5,7 +5,9 @@ workflows:
   test:
     jobs:
       - contract_tfi_factory
-      - package_storage_plus
+      - contract_tfi_pair
+      - contract_tfi_router
+      - package_tfi
   build:
     jobs:
       - lint
