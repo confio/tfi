@@ -2,7 +2,7 @@
 
 Components to build out Regulated DeFi for [Tgrade blockchain](https://tgrade.finance)
 
-* AMM (ported from tfi)
+* AMM (ported from `terraswap`)
 * Whitelisted Token
 
 ## Contracts
@@ -32,7 +32,7 @@ Or for a production-ready (compressed) build, run the following from the reposit
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.11.0
+  cosmwasm/workspace-optimizer:0.11.3
 ```
 
 The optimized contracts are generated in the artifacts/ directory.
