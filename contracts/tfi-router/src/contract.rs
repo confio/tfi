@@ -230,31 +230,28 @@ fn simulate_swap_operations(
 
     let mut offer_amount = offer_amount;
     for operation in operations.into_iter() {
-        match operation {
-            SwapOperation::Tfi {
-                offer_asset_info,
-                ask_asset_info,
-            } => {
-                let pair_info: PairInfo = query_pair_info(
-                    &deps.querier,
-                    tfi_factory.clone(),
-                    &[offer_asset_info.clone(), ask_asset_info.clone()],
-                )?;
+        let SwapOperation {
+            offer_asset_info,
+            ask_asset_info,
+        } = operation;
+        let pair_info: PairInfo = query_pair_info(
+            &deps.querier,
+            tfi_factory.clone(),
+            &[offer_asset_info.clone(), ask_asset_info.clone()],
+        )?;
 
-                let res: SimulationResponse =
-                    deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                        contract_addr: pair_info.contract_addr.to_string(),
-                        msg: to_binary(&PairQueryMsg::Simulation {
-                            offer_asset: Asset {
-                                info: offer_asset_info,
-                                amount: offer_amount,
-                            },
-                        })?,
-                    }))?;
+        let res: SimulationResponse =
+            deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr: pair_info.contract_addr.to_string(),
+                msg: to_binary(&PairQueryMsg::Simulation {
+                    offer_asset: Asset {
+                        info: offer_asset_info,
+                        amount: offer_amount,
+                    },
+                })?,
+            }))?;
 
-                offer_amount = res.return_amount;
-            }
-        }
+        offer_amount = res.return_amount;
     }
 
     Ok(SimulateSwapOperationsResponse {
@@ -265,15 +262,8 @@ fn simulate_swap_operations(
 fn assert_operations(operations: &[SwapOperation]) -> StdResult<()> {
     let mut ask_asset_map: HashMap<String, bool> = HashMap::new();
     for operation in operations.iter() {
-        let (offer_asset, ask_asset) = match operation {
-            SwapOperation::Tfi {
-                offer_asset_info,
-                ask_asset_info,
-            } => (offer_asset_info.clone(), ask_asset_info.clone()),
-        };
-
-        ask_asset_map.remove(&offer_asset.to_string());
-        ask_asset_map.insert(ask_asset.to_string(), true);
+        ask_asset_map.remove(&operation.offer_asset_info.to_string());
+        ask_asset_map.insert(operation.ask_asset_info.to_string(), true);
     }
 
     if ask_asset_map.keys().len() != 1 {
@@ -294,7 +284,7 @@ fn test_invalid_operations() {
     assert_eq!(
         true,
         assert_operations(&vec![
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -302,7 +292,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -318,7 +308,7 @@ fn test_invalid_operations() {
     assert_eq!(
         true,
         assert_operations(&vec![
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -326,7 +316,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -334,7 +324,7 @@ fn test_invalid_operations() {
                     denom: "uluna".to_string(),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "uluna".to_string(),
                 },
@@ -350,7 +340,7 @@ fn test_invalid_operations() {
     assert_eq!(
         true,
         assert_operations(&vec![
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -358,7 +348,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -366,7 +356,7 @@ fn test_invalid_operations() {
                     denom: "uaud".to_string(),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "uluna".to_string(),
                 },

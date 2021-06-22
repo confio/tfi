@@ -12,19 +12,14 @@ pub struct InstantiateMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum SwapOperation {
-    Tfi {
-        offer_asset_info: AssetInfo,
-        ask_asset_info: AssetInfo,
-    },
+pub struct SwapOperation {
+    pub offer_asset_info: AssetInfo,
+    pub ask_asset_info: AssetInfo,
 }
 
 impl SwapOperation {
     pub fn get_target_asset_info(&self) -> AssetInfo {
-        match self {
-            SwapOperation::Tfi { ask_asset_info, .. } => ask_asset_info.clone(),
-        }
+        self.ask_asset_info.clone()
     }
 }
 

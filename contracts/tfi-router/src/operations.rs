@@ -24,40 +24,37 @@ pub fn execute_swap_operation(
         return Err(StdError::generic_err("unauthorized"));
     }
 
-    let messages: Vec<CosmosMsg> = match operation {
-        SwapOperation::Tfi {
-            offer_asset_info,
-            ask_asset_info,
-        } => {
-            let config: Config = CONFIG.load(deps.as_ref().storage)?;
-            let tfi_factory = deps.api.addr_humanize(&config.tfi_factory)?;
-            let pair_info: PairInfo = query_pair_info(
-                &deps.querier,
-                tfi_factory,
-                &[offer_asset_info.clone(), ask_asset_info],
-            )?;
+    let SwapOperation {
+        offer_asset_info,
+        ask_asset_info,
+    } = operation;
+    let config: Config = CONFIG.load(deps.as_ref().storage)?;
+    let tfi_factory = deps.api.addr_humanize(&config.tfi_factory)?;
+    let pair_info: PairInfo = query_pair_info(
+        &deps.querier,
+        tfi_factory,
+        &[offer_asset_info.clone(), ask_asset_info],
+    )?;
 
-            let amount = match offer_asset_info.clone() {
-                AssetInfo::NativeToken { denom } => {
-                    query_balance(&deps.querier, env.contract.address, denom)?
-                }
-                AssetInfo::Token { contract_addr } => {
-                    query_token_balance(&deps.querier, contract_addr, env.contract.address)?
-                }
-            };
-            let offer_asset: Asset = Asset {
-                info: offer_asset_info,
-                amount,
-            };
-
-            vec![asset_into_swap_msg(
-                pair_info.contract_addr,
-                offer_asset,
-                None,
-                to,
-            )?]
+    let amount = match offer_asset_info.clone() {
+        AssetInfo::NativeToken { denom } => {
+            query_balance(&deps.querier, env.contract.address, denom)?
+        }
+        AssetInfo::Token { contract_addr } => {
+            query_token_balance(&deps.querier, contract_addr, env.contract.address)?
         }
     };
+    let offer_asset: Asset = Asset {
+        info: offer_asset_info,
+        amount,
+    };
+
+    let messages: Vec<CosmosMsg> = vec![asset_into_swap_msg(
+        pair_info.contract_addr,
+        offer_asset,
+        None,
+        to,
+    )?];
 
     Ok(Response {
         messages,
