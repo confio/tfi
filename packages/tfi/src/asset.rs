@@ -4,11 +4,10 @@ use std::fmt;
 
 use crate::querier::{query_balance, query_token_balance};
 use cosmwasm_std::{
-    to_binary, Addr, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, Decimal, MessageInfo,
-    QuerierWrapper, StdError, StdResult, Uint128, WasmMsg,
+    to_binary, Addr, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, MessageInfo, QuerierWrapper,
+    StdError, StdResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
-use terra_cosmwasm::TerraQuerier;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Asset {
@@ -22,48 +21,12 @@ impl fmt::Display for Asset {
     }
 }
 
-static DECIMAL_FRACTION: Uint128 = Uint128(1_000_000_000_000_000_000u128);
-
 impl Asset {
     pub fn is_native_token(&self) -> bool {
         self.info.is_native_token()
     }
 
-    pub fn compute_tax(&self, querier: &QuerierWrapper) -> StdResult<Uint128> {
-        let amount = self.amount;
-        if let AssetInfo::NativeToken { denom } = &self.info {
-            if denom == "uluna" {
-                Ok(Uint128::zero())
-            } else {
-                let terra_querier = TerraQuerier::new(querier);
-                let tax_rate: Decimal = (terra_querier.query_tax_rate()?).rate;
-                let tax_cap: Uint128 = (terra_querier.query_tax_cap(denom.to_string())?).cap;
-                Ok(std::cmp::min(
-                    amount.checked_sub(amount.multiply_ratio(
-                        DECIMAL_FRACTION,
-                        DECIMAL_FRACTION * tax_rate + DECIMAL_FRACTION,
-                    ))?,
-                    tax_cap,
-                ))
-            }
-        } else {
-            Ok(Uint128::zero())
-        }
-    }
-
-    pub fn deduct_tax(&self, querier: &QuerierWrapper) -> StdResult<Coin> {
-        let amount = self.amount;
-        if let AssetInfo::NativeToken { denom } = &self.info {
-            Ok(Coin {
-                denom: denom.to_string(),
-                amount: amount.checked_sub(self.compute_tax(querier)?)?,
-            })
-        } else {
-            Err(StdError::generic_err("cannot deduct tax from token asset"))
-        }
-    }
-
-    pub fn into_msg(self, querier: &QuerierWrapper, recipient: Addr) -> StdResult<CosmosMsg> {
+    pub fn into_msg(self, recipient: Addr) -> StdResult<CosmosMsg> {
         let amount = self.amount;
 
         match &self.info {
@@ -77,8 +40,21 @@ impl Asset {
             })),
             AssetInfo::NativeToken { .. } => Ok(CosmosMsg::Bank(BankMsg::Send {
                 to_address: recipient.to_string(),
-                amount: vec![self.deduct_tax(querier)?],
+                amount: vec![self.deduct_tax()?],
             })),
+        }
+    }
+
+    // TODO: rename this
+    pub fn deduct_tax(&self) -> StdResult<Coin> {
+        let amount = self.amount;
+        if let AssetInfo::NativeToken { denom } = &self.info {
+            Ok(Coin {
+                denom: denom.clone(),
+                amount,
+            })
+        } else {
+            Err(StdError::generic_err("cannot deduct tax from token asset"))
         }
     }
 

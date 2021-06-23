@@ -1,15 +1,13 @@
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Api, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
+    entry_point, from_binary, to_binary, Addr, Api, Binary, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, QueryRequest, Response, StdError, StdResult, Uint128, WasmMsg, WasmQuery,
 };
 
 use crate::operations::execute_swap_operation;
-use crate::querier::compute_tax;
 use crate::state::{Config, CONFIG};
 
 use cw20::Cw20ReceiveMsg;
 use std::collections::HashMap;
-use terra_cosmwasm::{SwapResponse, TerraMsgWrapper, TerraQuerier};
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::pair::{QueryMsg as PairQueryMsg, SimulationResponse};
 use tfi::querier::query_pair_info;
@@ -36,12 +34,7 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response<TerraMsgWrapper>> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
         ExecuteMsg::ExecuteSwapOperations {
@@ -99,7 +92,7 @@ pub fn receive_cw20(
     env: Env,
     _info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-) -> StdResult<Response<TerraMsgWrapper>> {
+) -> StdResult<Response> {
     let sender = deps.api.addr_validate(&cw20_msg.sender)?;
     match from_binary(&cw20_msg.msg)? {
         Cw20HookMsg::ExecuteSwapOperations {
@@ -127,7 +120,7 @@ pub fn execute_swap_operations(
     operations: Vec<SwapOperation>,
     minimum_receive: Option<Uint128>,
     to: Option<Addr>,
-) -> StdResult<Response<TerraMsgWrapper>> {
+) -> StdResult<Response> {
     let operations_len = operations.len();
     if operations_len == 0 {
         return Err(StdError::generic_err("must provide operations"));
@@ -140,7 +133,7 @@ pub fn execute_swap_operations(
     let target_asset_info = operations.last().unwrap().get_target_asset_info();
 
     let mut operation_index = 0;
-    let mut messages: Vec<CosmosMsg<TerraMsgWrapper>> = operations
+    let mut messages: Vec<CosmosMsg> = operations
         .into_iter()
         .map(|op| {
             operation_index += 1;
@@ -157,7 +150,7 @@ pub fn execute_swap_operations(
                 })?,
             }))
         })
-        .collect::<StdResult<Vec<CosmosMsg<TerraMsgWrapper>>>>()?;
+        .collect::<StdResult<Vec<CosmosMsg>>>()?;
 
     // Execute minimum amount assertion
     if let Some(minimum_receive) = minimum_receive {
@@ -188,7 +181,7 @@ fn assert_minium_receive(
     prev_balance: Uint128,
     minium_receive: Uint128,
     receiver: Addr,
-) -> StdResult<Response<TerraMsgWrapper>> {
+) -> StdResult<Response> {
     let receiver_balance = asset_info.query_pool(&deps.querier, receiver)?;
     let swap_amount = receiver_balance.checked_sub(prev_balance)?;
 
@@ -229,85 +222,36 @@ fn simulate_swap_operations(
 ) -> StdResult<SimulateSwapOperationsResponse> {
     let config: Config = CONFIG.load(deps.storage)?;
     let tfi_factory = deps.api.addr_humanize(&config.tfi_factory)?;
-    let terra_querier = TerraQuerier::new(&deps.querier);
 
     let operations_len = operations.len();
     if operations_len == 0 {
         return Err(StdError::generic_err("must provide operations"));
     }
 
-    let mut operation_index = 0;
     let mut offer_amount = offer_amount;
     for operation in operations.into_iter() {
-        operation_index += 1;
+        let SwapOperation {
+            offer_asset_info,
+            ask_asset_info,
+        } = operation;
+        let pair_info: PairInfo = query_pair_info(
+            &deps.querier,
+            tfi_factory.clone(),
+            &[offer_asset_info.clone(), ask_asset_info.clone()],
+        )?;
 
-        match operation {
-            SwapOperation::NativeSwap {
-                offer_denom,
-                ask_denom,
-            } => {
-                // Deduct tax before query simulation
-                // because last swap is swap_send
-                if operation_index == operations_len {
-                    offer_amount = offer_amount.checked_sub(compute_tax(
-                        &deps.querier,
-                        offer_amount,
-                        offer_denom.clone(),
-                    )?)?;
-                }
-
-                let res: SwapResponse = terra_querier.query_swap(
-                    Coin {
-                        denom: offer_denom,
+        let res: SimulationResponse =
+            deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr: pair_info.contract_addr.to_string(),
+                msg: to_binary(&PairQueryMsg::Simulation {
+                    offer_asset: Asset {
+                        info: offer_asset_info,
                         amount: offer_amount,
                     },
-                    ask_denom,
-                )?;
+                })?,
+            }))?;
 
-                offer_amount = res.receive.amount;
-            }
-            SwapOperation::Tfi {
-                offer_asset_info,
-                ask_asset_info,
-            } => {
-                let pair_info: PairInfo = query_pair_info(
-                    &deps.querier,
-                    tfi_factory.clone(),
-                    &[offer_asset_info.clone(), ask_asset_info.clone()],
-                )?;
-
-                // Deduct tax before querying simulation
-                if let AssetInfo::NativeToken { denom } = offer_asset_info.clone() {
-                    offer_amount = offer_amount.checked_sub(compute_tax(
-                        &deps.querier,
-                        offer_amount,
-                        denom,
-                    )?)?;
-                }
-
-                let mut res: SimulationResponse =
-                    deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                        contract_addr: pair_info.contract_addr.to_string(),
-                        msg: to_binary(&PairQueryMsg::Simulation {
-                            offer_asset: Asset {
-                                info: offer_asset_info,
-                                amount: offer_amount,
-                            },
-                        })?,
-                    }))?;
-
-                // Deduct tax after querying simulation
-                if let AssetInfo::NativeToken { denom } = ask_asset_info {
-                    res.return_amount = res.return_amount.checked_sub(compute_tax(
-                        &deps.querier,
-                        res.return_amount,
-                        denom,
-                    )?)?;
-                }
-
-                offer_amount = res.return_amount;
-            }
-        }
+        offer_amount = res.return_amount;
     }
 
     Ok(SimulateSwapOperationsResponse {
@@ -318,26 +262,8 @@ fn simulate_swap_operations(
 fn assert_operations(operations: &[SwapOperation]) -> StdResult<()> {
     let mut ask_asset_map: HashMap<String, bool> = HashMap::new();
     for operation in operations.iter() {
-        let (offer_asset, ask_asset) = match operation {
-            SwapOperation::NativeSwap {
-                offer_denom,
-                ask_denom,
-            } => (
-                AssetInfo::NativeToken {
-                    denom: offer_denom.clone(),
-                },
-                AssetInfo::NativeToken {
-                    denom: ask_denom.clone(),
-                },
-            ),
-            SwapOperation::Tfi {
-                offer_asset_info,
-                ask_asset_info,
-            } => (offer_asset_info.clone(), ask_asset_info.clone()),
-        };
-
-        ask_asset_map.remove(&offer_asset.to_string());
-        ask_asset_map.insert(ask_asset.to_string(), true);
+        ask_asset_map.remove(&operation.offer_asset_info.to_string());
+        ask_asset_map.insert(operation.ask_asset_info.to_string(), true);
     }
 
     if ask_asset_map.keys().len() != 1 {
@@ -357,12 +283,8 @@ fn test_invalid_operations() {
     // uluna output
     assert_eq!(
         true,
-        assert_operations(&vec![
-            SwapOperation::NativeSwap {
-                offer_denom: "uusd".to_string(),
-                ask_denom: "uluna".to_string(),
-            },
-            SwapOperation::Tfi {
+        assert_operations(&[
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -370,7 +292,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -385,12 +307,8 @@ fn test_invalid_operations() {
     // asset0002 output
     assert_eq!(
         true,
-        assert_operations(&vec![
-            SwapOperation::NativeSwap {
-                offer_denom: "uusd".to_string(),
-                ask_denom: "uluna".to_string(),
-            },
-            SwapOperation::Tfi {
+        assert_operations(&[
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -398,7 +316,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -406,7 +324,7 @@ fn test_invalid_operations() {
                     denom: "uluna".to_string(),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "uluna".to_string(),
                 },
@@ -421,12 +339,8 @@ fn test_invalid_operations() {
     // multiple output token types error
     assert_eq!(
         true,
-        assert_operations(&vec![
-            SwapOperation::NativeSwap {
-                offer_denom: "uusd".to_string(),
-                ask_denom: "ukrw".to_string(),
-            },
-            SwapOperation::Tfi {
+        assert_operations(&[
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "ukrw".to_string(),
                 },
@@ -434,7 +348,7 @@ fn test_invalid_operations() {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::Token {
                     contract_addr: Addr::unchecked("asset0001"),
                 },
@@ -442,7 +356,7 @@ fn test_invalid_operations() {
                     denom: "uaud".to_string(),
                 },
             },
-            SwapOperation::Tfi {
+            SwapOperation {
                 offer_asset_info: AssetInfo::NativeToken {
                     denom: "uluna".to_string(),
                 },

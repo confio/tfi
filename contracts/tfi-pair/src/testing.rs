@@ -4,7 +4,6 @@ use crate::contract::{
 };
 use crate::error::ContractError;
 use crate::math::{decimal_multiplication, reverse_decimal};
-use crate::mock_querier::mock_dependencies;
 
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -18,6 +17,7 @@ use tfi::pair::{
     SimulationResponse,
 };
 use tfi::token::InstantiateMsg as TokenInstantiateMsg;
+use tfi_mocks::mock_dependencies;
 
 #[test]
 fn proper_initialization() {
@@ -205,7 +205,7 @@ fn provide_liquidity() {
     // provide more liquidity 1:2, which is not proportional to 1:1,
     // then it must accept 1:1 and treat left amount as donation
     deps.querier.with_balance(&[(
-        &MOCK_CONTRACT_ADDR.to_string(),
+        &MOCK_CONTRACT_ADDR,
         vec![Coin {
             denom: "uusd".to_string(),
             amount: Uint128(200 + 200 /* user deposit must be pre-applied */),
@@ -495,10 +495,6 @@ fn withdraw_liquidity() {
         amount: Uint128(100u128),
     }]);
 
-    deps.querier.with_tax(
-        Decimal::zero(),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
     deps.querier.with_token_balances(&[
         (
             &"liquidity0000".to_string(),
@@ -616,11 +612,6 @@ fn try_native_to_token() {
         amount: collateral_pool_amount + offer_amount, /* user deposit must be pre-applied */
     }]);
 
-    deps.querier.with_tax(
-        Decimal::zero(),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
-
     deps.querier.with_token_balances(&[
         (
             &"liquidity0000".to_string(),
@@ -698,7 +689,6 @@ fn try_native_to_token() {
     let expected_return_amount = expected_ret_amount
         .checked_sub(expected_commission_amount)
         .unwrap();
-    let expected_tax_amount = Uint128::zero(); // no tax for token
 
     // check simulation res
     deps.querier.with_balance(&[(
@@ -762,7 +752,6 @@ fn try_native_to_token() {
             attr("ask_asset", "asset0000"),
             attr("offer_amount", offer_amount.to_string()),
             attr("return_amount", expected_return_amount.to_string()),
-            attr("tax_amount", expected_tax_amount.to_string()),
             attr("spread_amount", expected_spread_amount.to_string()),
             attr("commission_amount", expected_commission_amount.to_string()),
         ]
@@ -795,10 +784,6 @@ fn try_token_to_native() {
         denom: "uusd".to_string(),
         amount: collateral_pool_amount,
     }]);
-    deps.querier.with_tax(
-        Decimal::percent(1),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
     deps.querier.with_token_balances(&[
         (
             &"liquidity0000".to_string(),
@@ -893,12 +878,6 @@ fn try_token_to_native() {
     let expected_return_amount = expected_ret_amount
         .checked_sub(expected_commission_amount)
         .unwrap();
-    let expected_tax_amount = std::cmp::min(
-        Uint128(1000000u128),
-        expected_return_amount
-            .checked_sub(expected_return_amount.multiply_ratio(Uint128(100u128), Uint128(101u128)))
-            .unwrap(),
-    );
     // check simulation res
     // return asset token balance as normal
     deps.querier.with_token_balances(&[
@@ -965,7 +944,6 @@ fn try_token_to_native() {
             attr("ask_asset", "uusd"),
             attr("offer_amount", offer_amount.to_string()),
             attr("return_amount", expected_return_amount.to_string()),
-            attr("tax_amount", expected_tax_amount.to_string()),
             attr("spread_amount", expected_spread_amount.to_string()),
             attr("commission_amount", expected_commission_amount.to_string()),
         ]
@@ -977,8 +955,6 @@ fn try_token_to_native() {
             amount: vec![Coin {
                 denom: "uusd".to_string(),
                 amount: expected_return_amount
-                    .checked_sub(expected_tax_amount)
-                    .unwrap(),
             }],
         }),
         msg_transfer,
@@ -1041,35 +1017,6 @@ fn test_max_spread() {
         Uint128::from(10000u128),
     )
     .unwrap();
-}
-
-#[test]
-fn test_deduct() {
-    let mut deps = mock_dependencies(&[]);
-
-    let tax_rate = Decimal::percent(2);
-    let tax_cap = Uint128::from(1_000_000u128);
-    deps.querier.with_tax(
-        Decimal::percent(2),
-        &[(&"uusd".to_string(), &Uint128::from(1000000u128))],
-    );
-
-    let amount = Uint128(1_000_000_000u128);
-    let expected_after_amount = std::cmp::max(
-        amount.checked_sub(amount * tax_rate).unwrap(),
-        amount.checked_sub(tax_cap).unwrap(),
-    );
-
-    let after_amount = (Asset {
-        info: AssetInfo::NativeToken {
-            denom: "uusd".to_string(),
-        },
-        amount,
-    })
-    .deduct_tax(&deps.as_ref().querier)
-    .unwrap();
-
-    assert_eq!(expected_after_amount, after_amount.amount);
 }
 
 #[test]
