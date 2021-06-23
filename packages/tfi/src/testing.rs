@@ -94,31 +94,17 @@ fn supply_querier() {
 
 #[test]
 fn test_asset_info() {
-    let token_info: AssetInfo = AssetInfo::Token {
-        contract_addr: Addr::unchecked("asset0000"),
-    };
-    let native_token_info: AssetInfo = AssetInfo::NativeToken {
-        denom: "uusd".to_string(),
-    };
+    let token_info: AssetInfo = AssetInfo::Token(Addr::unchecked("asset0000"));
+    let native_token_info: AssetInfo = AssetInfo::Native("uusd".to_string());
 
     assert_eq!(false, token_info.equal(&native_token_info));
 
-    assert_eq!(
-        false,
-        token_info.equal(&AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0001"),
-        })
-    );
+    assert_ne!(token_info, AssetInfo::Token(Addr::unchecked("asset0001")),);
 
-    assert_eq!(
-        true,
-        token_info.equal(&AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0000"),
-        })
-    );
+    assert_eq!(token_info, AssetInfo::Token(Addr::unchecked("asset0000")),);
 
-    assert_eq!(true, native_token_info.is_native_token());
-    assert_eq!(false, token_info.is_native_token());
+    assert!(native_token_info.is_native_token());
+    assert!(!token_info.is_native_token());
 
     let mut deps = mock_dependencies(&[Coin {
         denom: "uusd".to_string(),
@@ -167,16 +153,12 @@ fn test_asset() {
 
     let token_asset = Asset {
         amount: Uint128(123123u128),
-        info: AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0000"),
-        },
+        info: AssetInfo::Token(Addr::unchecked("asset0000")),
     };
 
     let native_token_asset = Asset {
         amount: Uint128(123123u128),
-        info: AssetInfo::NativeToken {
-            denom: "uusd".to_string(),
-        },
+        info: AssetInfo::Native("uusd".to_string()),
     };
     assert_eq!(
         native_token_asset.deduct_tax().unwrap(),

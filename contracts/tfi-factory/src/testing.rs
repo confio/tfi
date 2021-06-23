@@ -116,12 +116,8 @@ fn create_pair() {
     let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
 
     let asset_infos = [
-        AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0000"),
-        },
-        AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0001"),
-        },
+        AssetInfo::Token(Addr::unchecked("asset0000")),
+        AssetInfo::Token(Addr::unchecked("asset0001")),
     ];
 
     let msg = ExecuteMsg::CreatePair {
@@ -159,16 +155,11 @@ fn create_pair() {
         },]
     );
 
-    let raw_infos = [
-        asset_infos[0].to_raw(deps.as_ref().api).unwrap(),
-        asset_infos[1].to_raw(deps.as_ref().api).unwrap(),
-    ];
-
     assert_eq!(
         TMP_PAIR_INFO.load(&deps.storage).unwrap(),
         TmpPairInfo {
-            asset_infos: raw_infos.clone(),
-            pair_key: pair_key(&raw_infos),
+            asset_infos: asset_infos.clone(),
+            pair_key: pair_key(&asset_infos),
         }
     );
 }
@@ -178,25 +169,16 @@ fn reply_test() {
     let mut deps = mock_dependencies(&[]);
 
     let asset_infos = [
-        AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0000"),
-        },
-        AssetInfo::Token {
-            contract_addr: Addr::unchecked("asset0001"),
-        },
+        AssetInfo::Token(Addr::unchecked("asset0000")),
+        AssetInfo::Token(Addr::unchecked("asset0001")),
     ];
 
-    let raw_infos = [
-        asset_infos[0].to_raw(deps.as_ref().api).unwrap(),
-        asset_infos[1].to_raw(deps.as_ref().api).unwrap(),
-    ];
-
-    let pair_key = pair_key(&raw_infos);
+    let pair_key = pair_key(&asset_infos);
     TMP_PAIR_INFO
         .save(
             &mut deps.storage,
             &TmpPairInfo {
-                asset_infos: raw_infos,
+                asset_infos: asset_infos.clone(),
                 pair_key,
             },
         )
@@ -215,12 +197,8 @@ fn reply_test() {
         &"pair0000".to_string(),
         &PairInfo {
             asset_infos: [
-                AssetInfo::NativeToken {
-                    denom: "uusd".to_string(),
-                },
-                AssetInfo::NativeToken {
-                    denom: "uusd".to_string(),
-                },
+                AssetInfo::Native("uusd".to_string()),
+                AssetInfo::Native("uusd".to_string()),
             ],
             contract_addr: Addr::unchecked("pair0000"),
             liquidity_token: Addr::unchecked("liquidity0000"),

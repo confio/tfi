@@ -4,8 +4,8 @@ use std::fmt;
 
 use crate::querier::{query_balance, query_token_balance};
 use cosmwasm_std::{
-    to_binary, Addr, Api, BankMsg, CanonicalAddr, Coin, CosmosMsg, MessageInfo, QuerierWrapper,
-    StdError, StdResult, Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Coin, CosmosMsg, MessageInfo, QuerierWrapper, StdError, StdResult,
+    Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 
@@ -30,7 +30,7 @@ impl Asset {
         let amount = self.amount;
 
         match &self.info {
-            AssetInfo::Token { contract_addr } => Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            AssetInfo::Token(contract_addr) => Ok(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: recipient.to_string(),
@@ -38,7 +38,7 @@ impl Asset {
                 })?,
                 send: vec![],
             })),
-            AssetInfo::NativeToken { .. } => Ok(CosmosMsg::Bank(BankMsg::Send {
+            AssetInfo::Native(_) => Ok(CosmosMsg::Bank(BankMsg::Send {
                 to_address: recipient.to_string(),
                 amount: vec![self.deduct_tax()?],
             })),
@@ -48,7 +48,7 @@ impl Asset {
     // TODO: rename this
     pub fn deduct_tax(&self) -> StdResult<Coin> {
         let amount = self.amount;
-        if let AssetInfo::NativeToken { denom } = &self.info {
+        if let AssetInfo::Native(denom) = &self.info {
             Ok(Coin {
                 denom: denom.clone(),
                 amount,
@@ -59,7 +59,7 @@ impl Asset {
     }
 
     pub fn assert_sent_native_token_balance(&self, message_info: &MessageInfo) -> StdResult<()> {
-        if let AssetInfo::NativeToken { denom } = &self.info {
+        if let AssetInfo::Native(denom) = &self.info {
             match message_info.funds.iter().find(|x| x.denom == *denom) {
                 Some(coin) => {
                     if self.amount == coin.amount {
@@ -80,20 +80,6 @@ impl Asset {
             Ok(())
         }
     }
-
-    pub fn to_raw(&self, api: &dyn Api) -> StdResult<AssetRaw> {
-        Ok(AssetRaw {
-            info: match &self.info {
-                AssetInfo::NativeToken { denom } => AssetInfoRaw::NativeToken {
-                    denom: denom.to_string(),
-                },
-                AssetInfo::Token { contract_addr } => AssetInfoRaw::Token {
-                    contract_addr: api.addr_canonicalize(contract_addr.as_str())?,
-                },
-            },
-            amount: self.amount,
-        })
-    }
 }
 
 /// AssetInfo contract_addr is usually passed from the cw20 hook
@@ -101,131 +87,56 @@ impl Asset {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AssetInfo {
-    Token { contract_addr: Addr },
-    NativeToken { denom: String },
+    Token(Addr),
+    Native(String),
 }
 
 impl fmt::Display for AssetInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AssetInfo::NativeToken { denom } => write!(f, "{}", denom),
-            AssetInfo::Token { contract_addr } => write!(f, "{}", contract_addr),
+            AssetInfo::Native(denom) => write!(f, "{}", denom),
+            AssetInfo::Token(contract_addr) => write!(f, "{}", contract_addr),
         }
     }
 }
 
 impl AssetInfo {
-    pub fn to_raw(&self, api: &dyn Api) -> StdResult<AssetInfoRaw> {
+    pub fn as_bytes(&self) -> &[u8] {
         match self {
-            AssetInfo::NativeToken { denom } => Ok(AssetInfoRaw::NativeToken {
-                denom: denom.to_string(),
-            }),
-            AssetInfo::Token { contract_addr } => Ok(AssetInfoRaw::Token {
-                contract_addr: api.addr_canonicalize(contract_addr.as_str())?,
-            }),
+            AssetInfo::Native(denom) => denom.as_bytes(),
+            AssetInfo::Token(contract_addr) => contract_addr.as_str().as_bytes(),
         }
     }
 
     pub fn is_native_token(&self) -> bool {
         match self {
-            AssetInfo::NativeToken { .. } => true,
-            AssetInfo::Token { .. } => false,
+            AssetInfo::Native(_) => true,
+            AssetInfo::Token(_) => false,
         }
     }
     pub fn query_pool(&self, querier: &QuerierWrapper, pool_addr: Addr) -> StdResult<Uint128> {
         match self {
-            AssetInfo::Token { contract_addr, .. } => {
+            AssetInfo::Token(contract_addr) => {
                 query_token_balance(querier, contract_addr.clone(), pool_addr)
             }
-            AssetInfo::NativeToken { denom, .. } => {
-                query_balance(querier, pool_addr, denom.to_string())
-            }
+            AssetInfo::Native(denom) => query_balance(querier, pool_addr, denom.to_string()),
         }
     }
 
     pub fn equal(&self, asset: &AssetInfo) -> bool {
         match self {
-            AssetInfo::Token { contract_addr, .. } => {
+            AssetInfo::Token(contract_addr) => {
                 let self_contract_addr = contract_addr;
                 match asset {
-                    AssetInfo::Token { contract_addr, .. } => self_contract_addr == contract_addr,
-                    AssetInfo::NativeToken { .. } => false,
+                    AssetInfo::Token(contract_addr) => self_contract_addr == contract_addr,
+                    AssetInfo::Native(_) => false,
                 }
             }
-            AssetInfo::NativeToken { denom, .. } => {
+            AssetInfo::Native(denom) => {
                 let self_denom = denom;
                 match asset {
-                    AssetInfo::Token { .. } => false,
-                    AssetInfo::NativeToken { denom, .. } => self_denom == denom,
-                }
-            }
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct AssetRaw {
-    pub info: AssetInfoRaw,
-    pub amount: Uint128,
-}
-
-impl AssetRaw {
-    pub fn to_normal(&self, api: &dyn Api) -> StdResult<Asset> {
-        Ok(Asset {
-            info: match &self.info {
-                AssetInfoRaw::NativeToken { denom } => AssetInfo::NativeToken {
-                    denom: denom.to_string(),
-                },
-                AssetInfoRaw::Token { contract_addr } => AssetInfo::Token {
-                    contract_addr: api.addr_humanize(&contract_addr)?,
-                },
-            },
-            amount: self.amount,
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum AssetInfoRaw {
-    Token { contract_addr: CanonicalAddr },
-    NativeToken { denom: String },
-}
-
-impl AssetInfoRaw {
-    pub fn to_normal(&self, api: &dyn Api) -> StdResult<AssetInfo> {
-        match self {
-            AssetInfoRaw::NativeToken { denom } => Ok(AssetInfo::NativeToken {
-                denom: denom.to_string(),
-            }),
-            AssetInfoRaw::Token { contract_addr } => Ok(AssetInfo::Token {
-                contract_addr: api.addr_humanize(&contract_addr)?,
-            }),
-        }
-    }
-
-    pub fn as_bytes(&self) -> &[u8] {
-        match self {
-            AssetInfoRaw::NativeToken { denom } => denom.as_bytes(),
-            AssetInfoRaw::Token { contract_addr } => contract_addr.as_slice(),
-        }
-    }
-
-    pub fn equal(&self, asset: &AssetInfoRaw) -> bool {
-        match self {
-            AssetInfoRaw::Token { contract_addr, .. } => {
-                let self_contract_addr = contract_addr;
-                match asset {
-                    AssetInfoRaw::Token { contract_addr, .. } => {
-                        self_contract_addr == contract_addr
-                    }
-                    AssetInfoRaw::NativeToken { .. } => false,
-                }
-            }
-            AssetInfoRaw::NativeToken { denom, .. } => {
-                let self_denom = denom;
-                match asset {
-                    AssetInfoRaw::Token { .. } => false,
-                    AssetInfoRaw::NativeToken { denom, .. } => self_denom == denom,
+                    AssetInfo::Token(_) => false,
+                    AssetInfo::Native(denom) => self_denom == denom,
                 }
             }
         }
@@ -240,33 +151,14 @@ pub struct PairInfo {
     pub liquidity_token: Addr,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PairInfoRaw {
-    pub asset_infos: [AssetInfoRaw; 2],
-    pub contract_addr: CanonicalAddr,
-    pub liquidity_token: CanonicalAddr,
-}
-
-impl PairInfoRaw {
-    pub fn to_normal(&self, api: &dyn Api) -> StdResult<PairInfo> {
-        Ok(PairInfo {
-            liquidity_token: api.addr_humanize(&self.liquidity_token)?,
-            contract_addr: api.addr_humanize(&self.contract_addr)?,
-            asset_infos: [
-                self.asset_infos[0].to_normal(api)?,
-                self.asset_infos[1].to_normal(api)?,
-            ],
-        })
-    }
-
+impl PairInfo {
     pub fn query_pools(
         &self,
         querier: &QuerierWrapper,
-        api: &dyn Api,
         contract_addr: Addr,
     ) -> StdResult<[Asset; 2]> {
-        let info_0: AssetInfo = self.asset_infos[0].to_normal(api)?;
-        let info_1: AssetInfo = self.asset_infos[1].to_normal(api)?;
+        let info_0 = self.asset_infos[0].clone();
+        let info_1 = self.asset_infos[1].clone();
         Ok([
             Asset {
                 amount: info_0.query_pool(querier, contract_addr.clone())?,

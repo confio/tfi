@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response,
-    StdError, StdResult, SubMsg, WasmMsg,
+    attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError,
+    StdResult, SubMsg, WasmMsg,
 };
 
 use crate::querier::query_liquidity_token;
@@ -10,7 +10,7 @@ use crate::response::MsgInstantiateContractResponse;
 use crate::state::{pair_key, read_pairs, Config, TmpPairInfo, CONFIG, PAIRS, TMP_PAIR_INFO};
 
 use protobuf::Message;
-use tfi::asset::{AssetInfo, PairInfo, PairInfoRaw};
+use tfi::asset::{AssetInfo, PairInfo};
 use tfi::factory::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, PairsResponse, QueryMsg,
 };
@@ -24,7 +24,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = Config {
-        owner: deps.api.addr_canonicalize(info.sender.as_str())?,
+        owner: info.sender,
         token_code_id: msg.token_code_id,
         pair_code_id: msg.pair_code_id,
     };
@@ -63,15 +63,14 @@ pub fn execute_update_config(
     let mut config: Config = CONFIG.load(deps.storage)?;
 
     // permission check
-    if deps.api.addr_canonicalize(info.sender.as_str())? != config.owner {
+    if info.sender != config.owner {
         return Err(StdError::generic_err("unauthorized"));
     }
 
     if let Some(owner) = owner {
         // validate address format
-        let _ = deps.api.addr_validate(&owner)?;
-
-        config.owner = deps.api.addr_canonicalize(&owner)?;
+        let owner = deps.api.addr_validate(&owner)?;
+        config.owner = owner;
     }
 
     if let Some(token_code_id) = token_code_id {
@@ -100,12 +99,8 @@ pub fn execute_create_pair(
     asset_infos: [AssetInfo; 2],
 ) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
-    let raw_infos = [
-        asset_infos[0].to_raw(deps.api)?,
-        asset_infos[1].to_raw(deps.api)?,
-    ];
 
-    let pair_key = pair_key(&raw_infos);
+    let pair_key = pair_key(&asset_infos);
     if let Ok(Some(_)) = PAIRS.may_load(deps.storage, &pair_key) {
         return Err(StdError::generic_err("Pair already exists"));
     }
@@ -114,7 +109,7 @@ pub fn execute_create_pair(
         deps.storage,
         &TmpPairInfo {
             pair_key,
-            asset_infos: raw_infos,
+            asset_infos: asset_infos.clone(),
         },
     )?;
 
@@ -154,15 +149,15 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
             StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
         })?;
 
-    let pair_contract = res.get_contract_address();
-    let liquidity_token = query_liquidity_token(deps.as_ref(), Addr::unchecked(pair_contract))?;
+    let pair_contract = deps.api.addr_validate(res.get_contract_address())?;
+    let liquidity_token = query_liquidity_token(deps.as_ref(), pair_contract.clone())?;
 
     PAIRS.save(
         deps.storage,
         &tmp_pair_info.pair_key,
-        &PairInfoRaw {
-            liquidity_token: deps.api.addr_canonicalize(liquidity_token.as_str())?,
-            contract_addr: deps.api.addr_canonicalize(pair_contract)?,
+        &PairInfo {
+            liquidity_token: liquidity_token.clone(),
+            contract_addr: pair_contract.clone(),
             asset_infos: tmp_pair_info.asset_infos,
         },
     )?;
@@ -171,7 +166,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         messages: vec![],
         submessages: vec![],
         attributes: vec![
-            attr("pair_contract_addr", pair_contract),
+            attr("pair_contract_addr", pair_contract.as_str()),
             attr("liquidity_token_addr", liquidity_token.as_str()),
         ],
         data: None,
@@ -192,7 +187,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let state: Config = CONFIG.load(deps.storage)?;
     let resp = ConfigResponse {
-        owner: deps.api.addr_humanize(&state.owner)?.to_string(),
+        owner: state.owner.into(),
         token_code_id: state.token_code_id,
         pair_code_id: state.pair_code_id,
     };
@@ -201,12 +196,9 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 }
 
 pub fn query_pair(deps: Deps, asset_infos: [AssetInfo; 2]) -> StdResult<PairInfo> {
-    let pair_key = pair_key(&[
-        asset_infos[0].to_raw(deps.api)?,
-        asset_infos[1].to_raw(deps.api)?,
-    ]);
-    let pair_info: PairInfoRaw = PAIRS.load(deps.storage, &pair_key)?;
-    pair_info.to_normal(deps.api)
+    let pair_key = pair_key(&asset_infos);
+    let pair_info: PairInfo = PAIRS.load(deps.storage, &pair_key)?;
+    Ok(pair_info)
 }
 
 pub fn query_pairs(
@@ -214,16 +206,7 @@ pub fn query_pairs(
     start_after: Option<[AssetInfo; 2]>,
     limit: Option<u32>,
 ) -> StdResult<PairsResponse> {
-    let start_after = if let Some(start_after) = start_after {
-        Some([
-            start_after[0].to_raw(deps.api)?,
-            start_after[1].to_raw(deps.api)?,
-        ])
-    } else {
-        None
-    };
-
-    let pairs: Vec<PairInfo> = read_pairs(deps.storage, deps.api, start_after, limit)?;
+    let pairs: Vec<PairInfo> = read_pairs(deps.storage, start_after, limit)?;
     let resp = PairsResponse { pairs };
 
     Ok(resp)

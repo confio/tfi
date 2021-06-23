@@ -1,11 +1,10 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Api, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    from_slice, to_binary, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
-use tfi::asset::{AssetInfoRaw, PairInfo, PairInfoRaw};
+use tfi::asset::{AssetInfo, PairInfo};
 
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
 /// this uses our CustomQuerier.
@@ -69,7 +68,7 @@ impl WasmMockQuerier {
         match &request {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
-                let prefix_pair_info = to_length_prefixed(b"pair_info").to_vec();
+                let prefix_pair_info = b"pair_info".to_vec();
 
                 if key.to_vec() == prefix_pair_info {
                     let pair_info: PairInfo = match self.tfi_pair_querier.pairs.get(contract_addr) {
@@ -82,21 +81,12 @@ impl WasmMockQuerier {
                         }
                     };
 
-                    let api: MockApi = MockApi::default();
-                    SystemResult::Ok(ContractResult::from(to_binary(&PairInfoRaw {
-                        contract_addr: api
-                            .addr_canonicalize(pair_info.contract_addr.as_str())
-                            .unwrap(),
-                        liquidity_token: api
-                            .addr_canonicalize(pair_info.liquidity_token.as_str())
-                            .unwrap(),
+                    SystemResult::Ok(ContractResult::from(to_binary(&PairInfo {
+                        contract_addr: pair_info.contract_addr.clone(),
+                        liquidity_token: pair_info.liquidity_token,
                         asset_infos: [
-                            AssetInfoRaw::NativeToken {
-                                denom: "uusd".to_string(),
-                            },
-                            AssetInfoRaw::NativeToken {
-                                denom: "uusd".to_string(),
-                            },
+                            AssetInfo::Native("uusd".to_string()),
+                            AssetInfo::Native("uusd".to_string()),
                         ],
                     })))
                 } else {
