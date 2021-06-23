@@ -16,9 +16,9 @@ on it to find artifacts. You will want to download:
 * [`tfi_pair.wasm` (v0.0.3)](https://github.com/confio/tfi/releases/download/v0.0.3/tfi_pair.wasm)
 * [`tfi_factory.wasm` (v0.0.3)](https://github.com/confio/tfi/releases/download/v0.0.3/tfi_factory.wasm)
 
-You will also need cw20-base token contract from `cosmwasm-plus`:
+You will also need cw20-base token contract from `cosmwasm-plus` (v0.6.2+):
 
-* [`cw20-base` (v0.6.1)](https://github.com/CosmWasm/cosmwasm-plus/releases/download/v0.6.1/cw20_base.wasm)
+* [`cw20-base` (v0.6.2)](https://github.com/CosmWasm/cosmwasm-plus/releases/download/v0.6.2/cw20_base.wasm)
 
 Once you have these, upload all three codes and record the code ids. I will call them: `PAIR_ID`, `FACTORY_ID`,
 `TOKEN_ID`.
