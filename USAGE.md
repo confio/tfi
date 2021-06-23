@@ -23,6 +23,10 @@ You will also need cw20-base token contract from `cosmwasm-plus`:
 Once you have these, upload all three codes and record the code ids. I will call them: `PAIR_ID`, `FACTORY_ID`,
 `TOKEN_ID`.
 
+Note that you must use `cw20-base` (or similar) for the token in `TOKEN_ID`, as the 
+[`InstantiateMsg` is fixed](https://github.com/confio/tfi/blob/main/packages/tfi/src/token.rs#L7-L15).
+This is used for *liquidity tokens*. You can use any custom (whitelist / dso) token contract for the trading pairs.
+
 ## Instantiate the Factory
 
 Each pair of tokens we wish to trade is controlled by a `tfi_pair` contract. However, the `tfi_factory` is responsible
@@ -42,6 +46,14 @@ To instantiate it, you want to pass this to instantiate `FACTORY_ID`:
 
 You only need one instance of the factory contract on a system. We can hardcode that in any client (as config).
 It will create all pairs and list them all.
+
+## Create some tokens to trade
+
+You can use a native token (from faucet) for one side.
+
+Create a cw20-compatible token (with the contract of your choice) for the other side.
+
+Make sure you have an account with plenty of both. Use those names below instead of the placeholder I provide.
 
 ## Create a trading Pair
 
@@ -119,3 +131,120 @@ which returns a list of all pairs to paginate through:
 }
 ```
 
+## Use AMM for one pair
+
+Now that we have an open pair at `PAIR_ADDR`, we want to fill it with liquidity and do some swaps.
+
+But first, do some queries to ensure you can observe any changes:
+
+```json
+{"pair": {}}
+```
+
+```json
+{"pool": {}}
+```
+
+In this case, we want to seed the contract with 25000000 `utgd` and 52000000 `wasm1hmdudppzceg27qsuq707tjg8rkgj7g5heszmrw` (`ASSET_ID`).
+The native tokens (`utgd`) can be sent directly with the request, but the cw20 tokens must be previously authorized.
+
+On `ASSET_ID` allow the tokens to be moved to the AMM:
+
+```json
+{
+  "increase_allowance": {
+    "spender": "$PAIR_ID",
+    "amount": "52000000"
+  }
+}
+```
+
+Then on `PAIR_ID`, fill it with liquidity, like this (slippage_tolerance is optional). Make sure you send the 25000000 `utgd`
+along with the `ExecuteMsg`:
+
+```json
+{
+  "provide_liquidity": {
+    "assets": [
+      {
+        "amount": "25000000",
+        "info": {
+          "native": "utgd"
+        }
+      },
+      {
+        "amount": "52000000",
+        "info": {
+          "token": "wasm1hmdudppzceg27qsuq707tjg8rkgj7g5heszmrw"
+        }
+      }
+    ],
+    "slippage_tolerance": "0.12"
+  }
+}
+```
+
+This should provide some initial tokens in the pool, and you can query `{"pool":{}}` to see this.
+It will also issue some `$liquidity_token` tokens to the sender to represent their stake in the pool,
+which they can later withdraw.
+
+Now, let's see what we can swap. You can test it out with a query. How about 2TGD (2000000 `utgd`)?
+
+```json
+{
+  "simulation": {
+    "offer_asset": {
+      "amount": "2000000",
+      "info": {
+        "native": "utgd"
+      }
+    }
+  }
+}
+```
+
+Happy with that? Send that 2000000 `utgd` along with an `ExecuteMsg` that looks like:
+
+```json
+{
+  "swap": {
+    "offer_asset": {
+      "amount": "2000000",
+      "info": {
+        "native": "utgd"
+      }
+    },
+    "belief_price": "1.75",
+    "max_spread": "0.08"
+  }
+}
+```
+
+(This will likely fail with these values and can be adjusted or omitted. 
+Both `belief_price` and `max_spread` are optional, but nice to pass in for good UX)
+
+If you want to swap from the cw20 token side, you need to send the cw20 tokens along with a message:
+
+```json
+{
+  "swap": {
+    "max_spread": "0.25"
+  }
+}
+```
+
+This can then be base64-encoded to `eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjI1In19Cg==`. You can generate this with
+`echo '{"swap":{"max_spread":"0.25"}}' | base64`
+
+And finally, we send a message to the cw20 token used on one side of the swap (`ASSET_ID`) to send tokens along
+with this request to the AMM. The final result will work like sending the native tokens directly:
+
+```json
+{
+  "send": {
+    "contract": "$PAIR_ID",
+    "amount": "5000000",
+    "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjI1In19Cg"
+  }
+}
+```
