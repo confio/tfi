@@ -597,28 +597,11 @@ dependencies = [
  "cw2",
  "cw20",
  "integer-sqrt",
- "protobuf",
  "schemars",
  "serde",
  "tfi",
  "tfi-mocks",
  "thiserror",
-]
-
-[[package]]
-name = "tfi-router"
-version = "0.0.2"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus",
- "cw20",
- "integer-sqrt",
- "schemars",
- "serde",
- "tfi",
- "tfi-mocks",
 ]
 
 [[package]]
