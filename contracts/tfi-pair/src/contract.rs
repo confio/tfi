@@ -25,6 +25,7 @@ use tfi::token::InstantiateMsg as TokenInstantiateMsg;
 
 /// Commission rate == 0.3%
 const COMMISSION_RATE: &str = "0.003";
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -34,7 +35,7 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let pair_info: &PairInfo = &PairInfo {
         contract_addr: env.contract.address.clone(),
-        // TODO: fix this
+        // ugly placeholder, but we set this in the callback
         liquidity_token: Addr::unchecked(""),
         asset_infos: msg.asset_infos,
     };
@@ -151,11 +152,12 @@ pub fn receive_cw20(
                 None
             };
 
+            let api = deps.api;
             swap(
                 deps,
                 env,
                 info,
-                Addr::unchecked(cw20_msg.sender),
+                api.addr_validate(&cw20_msg.sender)?,
                 Asset {
                     info: AssetInfo::Token(contract_addr),
                     amount: cw20_msg.amount,
