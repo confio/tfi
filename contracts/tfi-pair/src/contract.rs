@@ -1,6 +1,5 @@
 use crate::error::ContractError;
 use crate::math::{decimal_multiplication, decimal_subtraction, reverse_decimal};
-use crate::response::MsgInstantiateContractResponse;
 use crate::state::PAIR_INFO;
 
 #[cfg(not(feature = "library"))]
@@ -13,7 +12,6 @@ use cosmwasm_std::{
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use integer_sqrt::IntegerSquareRoot;
-use protobuf::Message;
 use std::str::FromStr;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::pair::{
@@ -180,16 +178,34 @@ pub fn receive_cw20(
     }
 }
 
+// This parses the contract_addr returned from init data
+// message MsgInstantiateContractResponse {
+//   string contract_address = 1;
+//   bytes data = 2;
+// }
+// Let's do this by hand to avoid whole protobuf libs
+fn parse_init_addr(init_result: &[u8]) -> StdResult<&str> {
+    // ensure the first byte (field 1, type 2 = 1 << 3 + 2 = 10)
+    if init_result[0] != 10 {
+        return Err(StdError::generic_err("Unexpected field, must be 10"));
+    }
+    // parse the length (this will always be less than 127 in our case)
+    let length = init_result[1] as usize;
+    let addr_bytes = &init_result[2..][..length];
+    Ok(std::str::from_utf8(addr_bytes)?)
+}
+
 /// This just stores the result for future query
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+    // this is the only expected one from init
+    if msg.id != 1 {
+        return Err(StdError::generic_err("Unsupported reply id"));
+    }
+
     let data = msg.result.unwrap().data.unwrap();
-    let res: MsgInstantiateContractResponse =
-        Message::parse_from_bytes(data.as_slice()).map_err(|_| {
-            StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
-        })?;
-    let liquidity_token = Addr::unchecked(res.get_contract_address());
-    let attributes = vec![attr("liquidity_token_addr", liquidity_token.as_str())];
+    let contract_addr = parse_init_addr(&data)?;
+    let liquidity_token = deps.api.addr_validate(contract_addr)?;
 
     PAIR_INFO.update(deps.storage, |mut meta| -> StdResult<_> {
         meta.liquidity_token = liquidity_token;
@@ -197,7 +213,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     })?;
 
     Ok(Response {
-        attributes,
+        attributes: vec![attr("liquidity_token_addr", contract_addr)],
         ..Response::default()
     })
 }
