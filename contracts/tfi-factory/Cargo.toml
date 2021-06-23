@@ -1,6 +1,6 @@
 [package]
 name = "tfi-factory"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Terraform Labs, PTE."]
 edition = "2018"
 description = "A tfi factory contract - auto pair contract generator and also directory for all pairs"
@@ -23,7 +23,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-tfi = { path = "../../packages/tfi", default-features = false, version = "0.0.2"}
+tfi = { path = "../../packages/tfi", default-features = false, version = "0.0.3"}
 cosmwasm-std = { version = "0.14.0", features = ["iterator"] }
 cw-storage-plus = { version = "0.6.0", features = ["iterator"]}
 schemars = "0.8.1"
