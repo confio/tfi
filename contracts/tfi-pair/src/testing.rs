@@ -25,12 +25,8 @@ fn proper_initialization() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -88,12 +84,8 @@ fn proper_initialization() {
     assert_eq!(
         pair_info.asset_infos,
         [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000")
-            }
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ]
     );
 }
@@ -115,12 +107,8 @@ fn provide_liquidity() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -150,15 +138,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(100u128),
             },
         ],
@@ -226,15 +210,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(200u128),
             },
         ],
@@ -284,15 +264,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(50u128),
             },
         ],
@@ -340,15 +316,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(98u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(100u128),
             },
         ],
@@ -382,15 +354,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(98u128),
             },
         ],
@@ -424,15 +392,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(99u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(100u128),
             },
         ],
@@ -462,15 +426,11 @@ fn provide_liquidity() {
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000".to_string()),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000".to_string())),
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: Uint128::from(99u128),
             },
         ],
@@ -508,12 +468,8 @@ fn withdraw_liquidity() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -625,12 +581,8 @@ fn try_native_to_token() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -659,9 +611,7 @@ fn try_native_to_token() {
     // normal swap
     let msg = ExecuteMsg::Swap {
         offer_asset: Asset {
-            info: AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
+            info: AssetInfo::Native("uusd".to_string()),
             amount: offer_amount,
         },
         belief_price: None,
@@ -702,9 +652,7 @@ fn try_native_to_token() {
     let simulation_res: SimulationResponse = query_simulation(
         deps.as_ref(),
         Asset {
-            info: AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
+            info: AssetInfo::Native("uusd".to_string()),
             amount: offer_amount,
         },
     )
@@ -717,9 +665,7 @@ fn try_native_to_token() {
     let reverse_simulation_res: ReverseSimulationResponse = query_reverse_simulation(
         deps.as_ref(),
         Asset {
-            info: AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            info: AssetInfo::Token(Addr::unchecked("asset0000")),
             amount: expected_return_amount,
         },
     )
@@ -800,12 +746,8 @@ fn try_token_to_native() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -834,9 +776,7 @@ fn try_token_to_native() {
     // unauthorized access; can not execute swap directly for token swap
     let msg = ExecuteMsg::Swap {
         offer_asset: Asset {
-            info: AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            info: AssetInfo::Token(Addr::unchecked("asset0000")),
             amount: offer_amount,
         },
         belief_price: None,
@@ -895,9 +835,7 @@ fn try_token_to_native() {
         deps.as_ref(),
         Asset {
             amount: offer_amount,
-            info: AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            info: AssetInfo::Token(Addr::unchecked("asset0000")),
         },
     )
     .unwrap();
@@ -910,9 +848,7 @@ fn try_token_to_native() {
         deps.as_ref(),
         Asset {
             amount: expected_return_amount,
-            info: AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
+            info: AssetInfo::Native("uusd".to_string()),
         },
     )
     .unwrap();
@@ -1042,12 +978,8 @@ fn test_query_pool() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::Native {
-                denom: "uusd".to_string(),
-            },
-            AssetInfo::Token {
-                contract_addr: Addr::unchecked("asset0000"),
-            },
+            AssetInfo::Native("uusd".to_string()),
+            AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
         token_code_id: 10u64,
     };
@@ -1079,15 +1011,11 @@ fn test_query_pool() {
         res.assets,
         [
             Asset {
-                info: AssetInfo::Native {
-                    denom: "uusd".to_string(),
-                },
+                info: AssetInfo::Native("uusd".to_string()),
                 amount: asset_0_amount
             },
             Asset {
-                info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0000"),
-                },
+                info: AssetInfo::Token(Addr::unchecked("asset0000")),
                 amount: asset_1_amount
             }
         ]
