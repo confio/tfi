@@ -25,7 +25,7 @@ fn proper_initialization() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -88,7 +88,7 @@ fn proper_initialization() {
     assert_eq!(
         pair_info.asset_infos,
         [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -115,7 +115,7 @@ fn provide_liquidity() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -156,7 +156,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(100u128),
@@ -232,7 +232,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(200u128),
@@ -290,7 +290,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(50u128),
@@ -346,7 +346,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(98u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(100u128),
@@ -388,7 +388,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(98u128),
@@ -430,7 +430,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(99u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(100u128),
@@ -468,7 +468,7 @@ fn provide_liquidity() {
                 amount: Uint128::from(100u128),
             },
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: Uint128::from(99u128),
@@ -508,7 +508,7 @@ fn withdraw_liquidity() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -625,7 +625,7 @@ fn try_native_to_token() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -659,7 +659,7 @@ fn try_native_to_token() {
     // normal swap
     let msg = ExecuteMsg::Swap {
         offer_asset: Asset {
-            info: AssetInfo::NativeToken {
+            info: AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             amount: offer_amount,
@@ -702,7 +702,7 @@ fn try_native_to_token() {
     let simulation_res: SimulationResponse = query_simulation(
         deps.as_ref(),
         Asset {
-            info: AssetInfo::NativeToken {
+            info: AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             amount: offer_amount,
@@ -800,7 +800,7 @@ fn try_token_to_native() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -910,7 +910,7 @@ fn try_token_to_native() {
         deps.as_ref(),
         Asset {
             amount: expected_return_amount,
-            info: AssetInfo::NativeToken {
+            info: AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
         },
@@ -1042,7 +1042,7 @@ fn test_query_pool() {
 
     let msg = InstantiateMsg {
         asset_infos: [
-            AssetInfo::NativeToken {
+            AssetInfo::Native {
                 denom: "uusd".to_string(),
             },
             AssetInfo::Token {
@@ -1079,7 +1079,7 @@ fn test_query_pool() {
         res.assets,
         [
             Asset {
-                info: AssetInfo::NativeToken {
+                info: AssetInfo::Native {
                     denom: "uusd".to_string(),
                 },
                 amount: asset_0_amount

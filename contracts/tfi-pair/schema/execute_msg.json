@@ -128,15 +128,7 @@
           ],
           "properties": {
             "token": {
-              "type": "object",
-              "required": [
-                "contract_addr"
-              ],
-              "properties": {
-                "contract_addr": {
-                  "$ref": "#/definitions/Addr"
-                }
-              }
+              "$ref": "#/definitions/Addr"
             }
           },
           "additionalProperties": false
@@ -144,19 +136,11 @@
         {
           "type": "object",
           "required": [
-            "native_token"
+            "native"
           ],
           "properties": {
-            "native_token": {
-              "type": "object",
-              "required": [
-                "denom"
-              ],
-              "properties": {
-                "denom": {
-                  "type": "string"
-                }
-              }
+            "native": {
+              "type": "string"
             }
           },
           "additionalProperties": false
