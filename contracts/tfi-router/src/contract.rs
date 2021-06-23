@@ -285,20 +285,12 @@ fn test_invalid_operations() {
         true,
         assert_operations(&[
             SwapOperation {
-                offer_asset_info: AssetInfo::NativeToken {
-                    denom: "ukrw".to_string(),
-                },
-                ask_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
+                offer_asset_info: AssetInfo::Native("ukrw".to_string()),
+                ask_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
             },
             SwapOperation {
-                offer_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
-                ask_asset_info: AssetInfo::NativeToken {
-                    denom: "uluna".to_string(),
-                },
+                offer_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
+                ask_asset_info: AssetInfo::Native("uluna".to_string()),
             }
         ])
         .is_ok()
@@ -309,28 +301,16 @@ fn test_invalid_operations() {
         true,
         assert_operations(&[
             SwapOperation {
-                offer_asset_info: AssetInfo::NativeToken {
-                    denom: "ukrw".to_string(),
-                },
-                ask_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
+                offer_asset_info: AssetInfo::Native("ukrw".to_string()),
+                ask_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
             },
             SwapOperation {
-                offer_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
-                ask_asset_info: AssetInfo::NativeToken {
-                    denom: "uluna".to_string(),
-                },
+                offer_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
+                ask_asset_info: AssetInfo::Native("uluna".to_string()),
             },
             SwapOperation {
-                offer_asset_info: AssetInfo::NativeToken {
-                    denom: "uluna".to_string(),
-                },
-                ask_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0002"),
-                },
+                offer_asset_info: AssetInfo::Native("uluna".to_string()),
+                ask_asset_info: AssetInfo::Token(Addr::unchecked("asset0002")),
             },
         ])
         .is_ok()
@@ -341,28 +321,16 @@ fn test_invalid_operations() {
         true,
         assert_operations(&[
             SwapOperation {
-                offer_asset_info: AssetInfo::NativeToken {
-                    denom: "ukrw".to_string(),
-                },
-                ask_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
+                offer_asset_info: AssetInfo::Native("ukrw".to_string()),
+                ask_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
             },
             SwapOperation {
-                offer_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0001"),
-                },
-                ask_asset_info: AssetInfo::NativeToken {
-                    denom: "uaud".to_string(),
-                },
+                offer_asset_info: AssetInfo::Token(Addr::unchecked("asset0001")),
+                ask_asset_info: AssetInfo::Native("uaud".to_string()),
             },
             SwapOperation {
-                offer_asset_info: AssetInfo::NativeToken {
-                    denom: "uluna".to_string(),
-                },
-                ask_asset_info: AssetInfo::Token {
-                    contract_addr: Addr::unchecked("asset0002"),
-                },
+                offer_asset_info: AssetInfo::Native("uluna".to_string()),
+                ask_asset_info: AssetInfo::Token(Addr::unchecked("asset0002")),
             },
         ])
         .is_err()

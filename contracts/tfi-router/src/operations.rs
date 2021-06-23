@@ -37,10 +37,8 @@ pub fn execute_swap_operation(
     )?;
 
     let amount = match offer_asset_info.clone() {
-        AssetInfo::NativeToken { denom } => {
-            query_balance(&deps.querier, env.contract.address, denom)?
-        }
-        AssetInfo::Token { contract_addr } => {
+        AssetInfo::Native(denom) => query_balance(&deps.querier, env.contract.address, denom)?,
+        AssetInfo::Token(contract_addr) => {
             query_token_balance(&deps.querier, contract_addr, env.contract.address)?
         }
     };
@@ -71,7 +69,7 @@ pub fn asset_into_swap_msg(
     to: Option<String>,
 ) -> StdResult<CosmosMsg> {
     match offer_asset.info.clone() {
-        AssetInfo::NativeToken { denom } => {
+        AssetInfo::Native(denom) => {
             let amount = offer_asset.amount;
 
             Ok(CosmosMsg::Wasm(WasmMsg::Execute {
@@ -88,7 +86,7 @@ pub fn asset_into_swap_msg(
                 })?,
             }))
         }
-        AssetInfo::Token { contract_addr } => Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+        AssetInfo::Token(contract_addr) => Ok(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: contract_addr.to_string(),
             send: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Send {
