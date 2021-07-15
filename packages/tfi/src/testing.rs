@@ -12,11 +12,11 @@ fn token_balance_querier() {
 
     deps.querier.with_token_balances(&[(
         &"liquidity0000".to_string(),
-        &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(123u128))],
+        &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::new(123))],
     )]);
 
     assert_eq!(
-        Uint128(123u128),
+        Uint128::new(123),
         query_token_balance(
             &deps.as_ref().querier,
             Addr::unchecked("liquidity0000"),
@@ -30,7 +30,7 @@ fn token_balance_querier() {
 fn balance_querier() {
     let deps = mock_dependencies(&[Coin {
         denom: "uusd".to_string(),
-        amount: Uint128(200u128),
+        amount: Uint128::new(200),
     }]);
 
     assert_eq!(
@@ -40,7 +40,7 @@ fn balance_querier() {
             "uusd".to_string()
         )
         .unwrap(),
-        Uint128(200u128)
+        Uint128::new(200)
     );
 }
 
@@ -49,11 +49,11 @@ fn all_balances_querier() {
     let deps = mock_dependencies(&[
         Coin {
             denom: "uusd".to_string(),
-            amount: Uint128(200u128),
+            amount: Uint128::new(200),
         },
         Coin {
             denom: "ukrw".to_string(),
-            amount: Uint128(300u128),
+            amount: Uint128::new(300),
         },
     ]);
 
@@ -62,11 +62,11 @@ fn all_balances_querier() {
         vec![
             Coin {
                 denom: "uusd".to_string(),
-                amount: Uint128(200u128),
+                amount: Uint128::new(200),
             },
             Coin {
                 denom: "ukrw".to_string(),
-                amount: Uint128(300u128),
+                amount: Uint128::new(300),
             }
         ]
     );
@@ -79,16 +79,16 @@ fn supply_querier() {
     deps.querier.with_token_balances(&[(
         &"liquidity0000".to_string(),
         &[
-            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128(123u128)),
-            (&"addr00000".to_string(), &Uint128(123u128)),
-            (&"addr00001".to_string(), &Uint128(123u128)),
-            (&"addr00002".to_string(), &Uint128(123u128)),
+            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128::new(123)),
+            (&"addr00000".to_string(), &Uint128::new(123)),
+            (&"addr00001".to_string(), &Uint128::new(123)),
+            (&"addr00002".to_string(), &Uint128::new(123)),
         ],
     )]);
 
     assert_eq!(
         query_supply(&deps.as_ref().querier, Addr::unchecked("liquidity0000")).unwrap(),
-        Uint128(492u128)
+        Uint128::new(492)
     )
 }
 
@@ -108,15 +108,15 @@ fn test_asset_info() {
 
     let mut deps = mock_dependencies(&[Coin {
         denom: "uusd".to_string(),
-        amount: Uint128(123),
+        amount: Uint128::new(123),
     }]);
     deps.querier.with_token_balances(&[(
         &"asset0000".to_string(),
         &[
-            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128(123u128)),
-            (&"addr00000".to_string(), &Uint128(123u128)),
-            (&"addr00001".to_string(), &Uint128(123u128)),
-            (&"addr00002".to_string(), &Uint128(123u128)),
+            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128::new(123)),
+            (&"addr00000".to_string(), &Uint128::new(123)),
+            (&"addr00001".to_string(), &Uint128::new(123)),
+            (&"addr00002".to_string(), &Uint128::new(123)),
         ],
     )]);
 
@@ -124,13 +124,13 @@ fn test_asset_info() {
         token_info
             .query_pool(&deps.as_ref().querier, Addr::unchecked(MOCK_CONTRACT_ADDR))
             .unwrap(),
-        Uint128(123u128)
+        Uint128::new(123)
     );
     assert_eq!(
         native_token_info
             .query_pool(&deps.as_ref().querier, Addr::unchecked(MOCK_CONTRACT_ADDR))
             .unwrap(),
-        Uint128(123u128)
+        Uint128::new(123)
     );
 }
 
@@ -138,33 +138,33 @@ fn test_asset_info() {
 fn test_asset() {
     let mut deps = mock_dependencies(&[Coin {
         denom: "uusd".to_string(),
-        amount: Uint128(123),
+        amount: Uint128::new(123),
     }]);
 
     deps.querier.with_token_balances(&[(
         &"asset0000".to_string(),
         &[
-            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128(123u128)),
-            (&"addr00000".to_string(), &Uint128(123u128)),
-            (&"addr00001".to_string(), &Uint128(123u128)),
-            (&"addr00002".to_string(), &Uint128(123u128)),
+            (&MOCK_CONTRACT_ADDR.to_string(), &Uint128::new(123)),
+            (&"addr00000".to_string(), &Uint128::new(123)),
+            (&"addr00001".to_string(), &Uint128::new(123)),
+            (&"addr00002".to_string(), &Uint128::new(123)),
         ],
     )]);
 
     let token_asset = Asset {
-        amount: Uint128(123123u128),
+        amount: Uint128::new(123123),
         info: AssetInfo::Token(Addr::unchecked("asset0000")),
     };
 
     let native_token_asset = Asset {
-        amount: Uint128(123123u128),
+        amount: Uint128::new(123123),
         info: AssetInfo::Native("uusd".to_string()),
     };
     assert_eq!(
         native_token_asset.deduct_tax().unwrap(),
         Coin {
             denom: "uusd".to_string(),
-            amount: Uint128(123123u128),
+            amount: Uint128::new(123123),
         }
     );
 
@@ -174,10 +174,10 @@ fn test_asset() {
             contract_addr: "asset0000".to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "rcpt".to_string(),
-                amount: Uint128(123123u128),
+                amount: Uint128::new(123123),
             })
             .unwrap(),
-            send: vec![],
+            funds: vec![],
         })
     );
 
@@ -189,7 +189,7 @@ fn test_asset() {
             to_address: "rcpt".to_string(),
             amount: vec![Coin {
                 denom: "uusd".to_string(),
-                amount: Uint128(123123u128),
+                amount: Uint128::new(123123),
             }]
         })
     );

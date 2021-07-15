@@ -36,7 +36,7 @@ impl Asset {
                     recipient: recipient.to_string(),
                     amount,
                 })?,
-                send: vec![],
+                funds: vec![],
             })),
             AssetInfo::Native(_) => Ok(CosmosMsg::Bank(BankMsg::Send {
                 to_address: recipient.to_string(),
