@@ -6,7 +6,7 @@ use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, ContractResult, Reply, ReplyOn, StdError, SubMsg,
-    SubcallResponse, WasmMsg,
+    SubMsgExecutionResponse, WasmMsg,
 };
 use tfi::asset::{AssetInfo, PairInfo};
 use tfi::factory::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -135,7 +135,7 @@ fn create_pair() {
         ]
     );
     assert_eq!(
-        res.submessages,
+        res.messages,
         vec![SubMsg {
             id: 1,
             gas_limit: None,
@@ -147,7 +147,7 @@ fn create_pair() {
                 })
                 .unwrap(),
                 code_id: 321u64,
-                send: vec![],
+                funds: vec![],
                 label: "".to_string(),
                 admin: None,
             }
@@ -186,7 +186,7 @@ fn reply_test() {
 
     let reply_msg = Reply {
         id: 1,
-        result: ContractResult::Ok(SubcallResponse {
+        result: ContractResult::Ok(SubMsgExecutionResponse {
             events: vec![],
             data: Some(vec![10, 8, 112, 97, 105, 114, 48, 48, 48, 48].into()),
         }),

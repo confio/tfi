@@ -31,12 +31,7 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response {
-        messages: vec![],
-        attributes: vec![],
-        submessages: vec![],
-        data: None,
-    })
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -84,10 +79,8 @@ pub fn execute_update_config(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response {
-        messages: vec![],
         attributes: vec![attr("action", "update_config")],
-        data: None,
-        submessages: vec![],
+        ..Response::default()
     })
 }
 
@@ -114,18 +107,16 @@ pub fn execute_create_pair(
     )?;
 
     Ok(Response {
-        messages: vec![],
         attributes: vec![
             attr("action", "create_pair"),
             attr("pair", format!("{}-{}", asset_infos[0], asset_infos[1])),
         ],
-        data: None,
-        submessages: vec![SubMsg {
+        messages: vec![SubMsg {
             id: 1,
             gas_limit: None,
             msg: WasmMsg::Instantiate {
                 code_id: config.pair_code_id,
-                send: vec![],
+                funds: vec![],
                 admin: None,
                 label: "".to_string(),
                 msg: to_binary(&PairInstantiateMsg {
@@ -136,6 +127,7 @@ pub fn execute_create_pair(
             .into(),
             reply_on: ReplyOn::Success,
         }],
+        ..Response::default()
     })
 }
 
@@ -163,13 +155,11 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     )?;
 
     Ok(Response {
-        messages: vec![],
-        submessages: vec![],
         attributes: vec![
             attr("pair_contract_addr", pair_contract.as_str()),
             attr("liquidity_token_addr", liquidity_token.as_str()),
         ],
-        data: None,
+        ..Response::default()
     })
 }
 
