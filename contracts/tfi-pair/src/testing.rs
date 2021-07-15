@@ -670,24 +670,21 @@ fn try_native_to_token() {
         },
     )
     .unwrap();
-    assert_eq!(
+    assert!(
         (offer_amount.u128() as i128 - reverse_simulation_res.offer_amount.u128() as i128).abs()
-            < 5i128,
-        true
+            < 5i128
     );
-    assert_eq!(
+    assert!(
         (expected_commission_amount.u128() as i128
             - reverse_simulation_res.commission_amount.u128() as i128)
             .abs()
-            < 5i128,
-        true
+            < 5i128
     );
-    assert_eq!(
+    assert!(
         (expected_spread_amount.u128() as i128
             - reverse_simulation_res.spread_amount.u128() as i128)
             .abs()
-            < 5i128,
-        true
+            < 5i128
     );
 
     assert_eq!(
@@ -852,24 +849,21 @@ fn try_token_to_native() {
         },
     )
     .unwrap();
-    assert_eq!(
+    assert!(
         (offer_amount.u128() as i128 - reverse_simulation_res.offer_amount.u128() as i128).abs()
-            < 5i128,
-        true
+            < 5i128
     );
-    assert_eq!(
+    assert!(
         (expected_commission_amount.u128() as i128
             - reverse_simulation_res.commission_amount.u128() as i128)
             .abs()
-            < 5i128,
-        true
+            < 5i128
     );
-    assert_eq!(
+    assert!(
         (expected_spread_amount.u128() as i128
             - reverse_simulation_res.spread_amount.u128() as i128)
             .abs()
-            < 5i128,
-        true
+            < 5i128
     );
 
     assert_eq!(

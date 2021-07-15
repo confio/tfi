@@ -97,7 +97,7 @@ fn test_asset_info() {
     let token_info: AssetInfo = AssetInfo::Token(Addr::unchecked("asset0000"));
     let native_token_info: AssetInfo = AssetInfo::Native("uusd".to_string());
 
-    assert_eq!(false, token_info.equal(&native_token_info));
+    assert!(!token_info.equal(&native_token_info));
 
     assert_ne!(token_info, AssetInfo::Token(Addr::unchecked("asset0001")),);
 
