@@ -243,7 +243,7 @@ mod tests {
             .unwrap();
         router.update_block(next_block);
 
-        // create cw20-whitelist contract
+        // create dso-token contract
         let cw20_id = router.store_code(contract_cw20());
         let amount = Uint128::from(11223344u128);
         let instantiate_msg = InstantiateMsg {
