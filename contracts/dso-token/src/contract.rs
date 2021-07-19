@@ -295,6 +295,28 @@ mod tests {
             .unwrap();
         assert_eq!(whitelist.address, group_addr);
 
+        // check IsWhitelisted query
+        let whitelisted: IsWhitelistedResponse = router
+            .wrap()
+            .query_wasm_smart(
+                &cw20_addr,
+                &QueryMsg::IsWhitelisted {
+                    address: MEMBER1.into(),
+                },
+            )
+            .unwrap();
+        assert!(whitelisted.whitelisted);
+        let not_whitelisted: IsWhitelistedResponse = router
+            .wrap()
+            .query_wasm_smart(
+                &cw20_addr,
+                &QueryMsg::IsWhitelisted {
+                    address: NON_MEMBER.into(),
+                },
+            )
+            .unwrap();
+        assert!(!not_whitelisted.whitelisted);
+
         // TODO: pull this out into a separate test
 
         // send to whitelisted member works
