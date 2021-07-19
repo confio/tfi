@@ -8,7 +8,7 @@ use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw4::Cw4Contract;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, WhitelistResponse};
+use crate::msg::{ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg, WhitelistResponse};
 use crate::state::WHITELIST;
 
 // version info for migration info
@@ -152,10 +152,18 @@ fn query_whitelist(deps: Deps) -> StdResult<WhitelistResponse> {
     Ok(WhitelistResponse { address })
 }
 
+fn query_is_whitelisted(deps: Deps, address: String) -> StdResult<IsWhitelistedResponse> {
+    let address = deps.api.addr_validate(&address)?;
+    let whitelist = WHITELIST.load(deps.storage)?;
+    let whitelisted = whitelist.is_member(&deps.querier, &address)?.is_some();
+    Ok(IsWhitelistedResponse { whitelisted })
+}
+
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Whitelist {} => to_binary(&query_whitelist(deps)?),
+        QueryMsg::IsWhitelisted { address } => to_binary(&query_is_whitelisted(deps, address)?),
         QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
         QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
         QueryMsg::Minter {} => to_binary(&query_minter(deps)?),
