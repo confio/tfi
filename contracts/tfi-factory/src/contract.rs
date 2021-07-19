@@ -113,11 +113,13 @@ pub fn execute_create_pair(
         },
     )?;
 
+    let pair_name = format!("{}-{}", asset_infos[0], asset_infos[1]);
+
     Ok(Response {
         messages: vec![],
         attributes: vec![
             attr("action", "create_pair"),
-            attr("pair", format!("{}-{}", asset_infos[0], asset_infos[1])),
+            attr("pair", pair_name.clone()),
         ],
         data: None,
         submessages: vec![SubMsg {
@@ -127,7 +129,7 @@ pub fn execute_create_pair(
                 code_id: config.pair_code_id,
                 send: vec![],
                 admin: None,
-                label: "".to_string(),
+                label: pair_name,
                 msg: to_binary(&PairInstantiateMsg {
                     asset_infos,
                     token_code_id: config.token_code_id,
