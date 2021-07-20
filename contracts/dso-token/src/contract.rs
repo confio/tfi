@@ -186,7 +186,7 @@ mod tests {
     use super::*;
 
     use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
-    use cosmwasm_std::{coins, Addr, Empty, Uint128};
+    use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
     use cw20::{Cw20Coin, Cw20Contract, TokenInfoResponse};
     use cw4::Member;
     use cw_multi_test::{next_block, App, Contract, ContractWrapper, SimpleBank};
@@ -222,42 +222,83 @@ mod tests {
     const MEMBER2: &str = "member2";
     const NON_MEMBER: &str = "non-member";
 
+    #[derive(Default)]
+    struct SuiteConfig {
+        init_funds: Vec<Coin>,
+        initial_balances: Vec<Cw20Coin>,
+    }
+
+    impl SuiteConfig {
+        fn init(self) -> Suite {
+            Suite::init(self)
+        }
+    }
+
+    struct Suite {
+        router: App,
+        group_addr: Addr,
+        cw20_addr: Addr,
+        cash: Cw20Contract,
+    }
+
+    impl Suite {
+        fn init(config: SuiteConfig) -> Self {
+            let mut router = mock_app();
+
+            // set personal balance
+            let owner = Addr::unchecked(OWNER);
+            router.set_bank_balance(&owner, config.init_funds).unwrap();
+
+            // create group contract
+            let group_id = router.store_code(contract_group());
+            let msg = cw4_group::msg::InstantiateMsg {
+                admin: Some(OWNER.to_owned()),
+                members: vec![
+                    Member {
+                        addr: MEMBER1.to_owned(),
+                        weight: 50,
+                    },
+                    Member {
+                        addr: MEMBER2.to_owned(),
+                        weight: 0,
+                    },
+                ],
+            };
+            let group_addr = router
+                .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST")
+                .unwrap();
+            router.update_block(next_block);
+
+            let cw20_id = router.store_code(contract_cw20());
+            let instantiate_msg = InstantiateMsg {
+                name: "Cash Token".to_owned(),
+                symbol: "CASH".to_owned(),
+                decimals: 9,
+                initial_balances: config.initial_balances,
+                mint: None,
+                whitelist_group: group_addr.to_string(),
+            };
+            let cw20_addr = router
+                .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH")
+                .unwrap();
+            router.update_block(next_block);
+
+            let cash = Cw20Contract(cw20_addr.clone());
+
+            Suite {
+                router,
+                group_addr,
+                cw20_addr,
+                cash,
+            }
+        }
+    }
+
     #[test]
     fn proper_instantiation() {
-        let mut router = mock_app();
-
-        // set personal balance
-        let owner = Addr::unchecked(OWNER);
-        let init_funds = coins(2000, "btc");
-        router.set_bank_balance(&owner, init_funds).unwrap();
-
-        // create group contract
-        let group_id = router.store_code(contract_group());
-        let msg = cw4_group::msg::InstantiateMsg {
-            admin: Some(OWNER.into()),
-            members: vec![
-                Member {
-                    addr: MEMBER1.into(),
-                    weight: 50,
-                },
-                Member {
-                    addr: MEMBER2.into(),
-                    weight: 0,
-                },
-            ],
-        };
-        let group_addr = router
-            .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST")
-            .unwrap();
-        router.update_block(next_block);
-
-        // create dso-token contract
-        let cw20_id = router.store_code(contract_cw20());
         let amount = Uint128::from(11223344u128);
-        let instantiate_msg = InstantiateMsg {
-            name: "Cash Token".to_string(),
-            symbol: "CASH".to_string(),
-            decimals: 9,
+        let Suite { cash, router, .. } = SuiteConfig {
+            init_funds: coins(2000, "btc"),
             initial_balances: vec![
                 Cw20Coin {
                     address: String::from(MEMBER1),
@@ -268,15 +309,9 @@ mod tests {
                     amount,
                 },
             ],
-            mint: None,
-            whitelist_group: group_addr.to_string(),
-        };
-        let cw20_addr = router
-            .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH")
-            .unwrap();
-        router.update_block(next_block);
+        }
+        .init();
 
-        let cash = Cw20Contract(cw20_addr.clone());
         assert_eq!(
             cash.meta(&router).unwrap(),
             TokenInfoResponse {
@@ -288,36 +323,30 @@ mod tests {
         );
         assert_eq!(cash.balance(&router, MEMBER1).unwrap(), amount);
         assert_eq!(cash.balance(&router, MEMBER2).unwrap(), Uint128::zero());
+    }
 
-        let whitelist: WhitelistResponse = router
-            .wrap()
-            .query_wasm_smart(&cw20_addr, &QueryMsg::Whitelist {})
-            .unwrap();
-        assert_eq!(whitelist.address, group_addr);
-
-        // check IsWhitelisted query
-        let whitelisted: IsWhitelistedResponse = router
-            .wrap()
-            .query_wasm_smart(
-                &cw20_addr,
-                &QueryMsg::IsWhitelisted {
-                    address: MEMBER1.into(),
+    #[test]
+    fn transfer() {
+        let amount = Uint128::from(11223344u128);
+        let Suite {
+            cash,
+            mut router,
+            cw20_addr,
+            ..
+        } = SuiteConfig {
+            init_funds: coins(2000, "btc"),
+            initial_balances: vec![
+                Cw20Coin {
+                    address: String::from(MEMBER1),
+                    amount,
                 },
-            )
-            .unwrap();
-        assert!(whitelisted.whitelisted);
-        let not_whitelisted: IsWhitelistedResponse = router
-            .wrap()
-            .query_wasm_smart(
-                &cw20_addr,
-                &QueryMsg::IsWhitelisted {
-                    address: NON_MEMBER.into(),
+                Cw20Coin {
+                    address: String::from(OWNER),
+                    amount,
                 },
-            )
-            .unwrap();
-        assert!(!not_whitelisted.whitelisted);
-
-        // TODO: pull this out into a separate test
+            ],
+        }
+        .init();
 
         // send to whitelisted member works
         let to_send = Uint128::new(50000);
@@ -343,5 +372,43 @@ mod tests {
             .execute_contract(Addr::unchecked(MEMBER1), cw20_addr, &bad_send, &[])
             .unwrap_err();
         assert_eq!(&err, "Unauthorized");
+    }
+
+    #[test]
+    fn whitelist() {
+        let Suite {
+            router,
+            cw20_addr,
+            group_addr,
+            ..
+        } = SuiteConfig::default().init();
+
+        let whitelist: WhitelistResponse = router
+            .wrap()
+            .query_wasm_smart(&cw20_addr, &QueryMsg::Whitelist {})
+            .unwrap();
+        assert_eq!(whitelist.address, group_addr);
+
+        let is_whitelisted: IsWhitelistedResponse = router
+            .wrap()
+            .query_wasm_smart(
+                &cw20_addr,
+                &QueryMsg::IsWhitelisted {
+                    address: MEMBER1.to_owned(),
+                },
+            )
+            .unwrap();
+        assert!(is_whitelisted.whitelisted);
+
+        let is_whitelisted: IsWhitelistedResponse = router
+            .wrap()
+            .query_wasm_smart(
+                &cw20_addr,
+                &QueryMsg::IsWhitelisted {
+                    address: NON_MEMBER.to_owned(),
+                },
+            )
+            .unwrap();
+        assert!(!is_whitelisted.whitelisted);
     }
 }
