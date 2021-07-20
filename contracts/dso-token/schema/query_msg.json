@@ -16,6 +16,27 @@
       "additionalProperties": false
     },
     {
+      "description": "Returns true if the address is in the Whitelist contract. Just a helper around querying the whitelist, then querying those members",
+      "type": "object",
+      "required": [
+        "is_whitelisted"
+      ],
+      "properties": {
+        "is_whitelisted": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Returns the current balance of the given address, 0 if unset. Return type: BalanceResponse.",
       "type": "object",
       "required": [

@@ -21,6 +21,9 @@ pub enum QueryMsg {
     /// Returns the cw4 contract used to whitelist this token.
     /// Return type: WhitelistResponse
     Whitelist {},
+    /// Returns true if the address is in the Whitelist contract.
+    /// Just a helper around querying the whitelist, then querying those members
+    IsWhitelisted { address: String },
     /// Returns the current balance of the given address, 0 if unset.
     /// Return type: BalanceResponse.
     Balance { address: String },
@@ -55,4 +58,9 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct WhitelistResponse {
     pub address: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct IsWhitelistedResponse {
+    pub whitelisted: bool,
 }
