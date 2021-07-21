@@ -58,7 +58,7 @@ pub fn instantiate(
                     }),
                 })?,
                 send: vec![],
-                label: "".to_string(),
+                label: "uLP liquidity token".to_string(),
             }
             .into(),
             gas_limit: None,
