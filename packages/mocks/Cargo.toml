@@ -1,6 +1,6 @@
 [package]
 name = "tfi-mocks"
-version = "0.0.3"
+version = "0.0.5"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2018"
 description = "Mocks for tfi tests"
@@ -11,7 +11,7 @@ homepage = "https://tgrade.finance"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tfi = { path = "../tfi", version = "0.0.3" }
+tfi = { path = "../tfi", version = "0.0.5" }
 cw20 = { version = "0.6" }
 cosmwasm-storage = { version = "0.14.0" }
 cosmwasm-std = { version = "0.14.0" }
