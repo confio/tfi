@@ -148,7 +148,7 @@ fn create_pair() {
                 .unwrap(),
                 code_id: 321u64,
                 send: vec![],
-                label: "Living the dream".to_string(),
+                label: "asset0000-asset0001".to_string(),
                 admin: None,
             }
             .into()

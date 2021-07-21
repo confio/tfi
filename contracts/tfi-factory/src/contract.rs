@@ -121,7 +121,7 @@ pub fn execute_create_pair(
             code_id: config.pair_code_id,
             send: vec![],
             admin: None,
-            label: "Living the dream".to_string(),
+            label: pair_name.clone(),
             msg: to_binary(&PairInstantiateMsg {
                 asset_infos,
                 token_code_id: config.token_code_id,
