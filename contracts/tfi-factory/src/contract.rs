@@ -1,6 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg, to_vec, Empty};
+use cosmwasm_std::{
+    attr, to_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn, Response,
+    StdError, StdResult, SubMsg, WasmMsg,
+};
 
 use crate::querier::query_liquidity_token;
 use crate::response::MsgInstantiateContractResponse;
@@ -118,26 +121,20 @@ pub fn execute_create_pair(
             code_id: config.pair_code_id,
             send: vec![],
             admin: None,
-            label: pair_name.clone(),
+            label: "Living the dream".to_string(),
             msg: to_binary(&PairInstantiateMsg {
                 asset_infos,
                 token_code_id: config.token_code_id,
             })?,
         }
-            .into(),
+        .into(),
         reply_on: ReplyOn::Success,
     };
-    let debug = String::from_utf8(to_vec(&sub_msg)?)?;
-
     Ok(Response {
         messages: vec![],
-        attributes: vec![
-            attr("action", "create_pair"),
-            attr("pair", pair_name.clone()),
-            attr("debug", debug),
-        ],
+        attributes: vec![attr("action", "create_pair"), attr("pair", pair_name)],
         data: None,
-        submessages: vec![],
+        submessages: vec![sub_msg],
     })
 }
 
