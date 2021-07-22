@@ -246,6 +246,7 @@ pub fn provide_liquidity(
     }
 
     let pair_info: PairInfo = PAIR_INFO.load(deps.storage)?;
+    // we really should do this locally...
     let mut pools: [Asset; 2] =
         pair_info.query_pools(&deps.querier, env.contract.address.clone())?;
     let deposits: [Uint128; 2] = [
@@ -275,12 +276,9 @@ pub fn provide_liquidity(
                 send: vec![],
             }));
         } else {
-            println!("pool amount: {}", pool.amount);
-            println!("deposits: {}", deposits[i]);
             // If the asset is native token, balance is already increased
             // To calculated properly we should subtract user deposit from the pool
             pool.amount = pool.amount.checked_sub(deposits[i])?;
-            println!("BBB");
         }
     }
 

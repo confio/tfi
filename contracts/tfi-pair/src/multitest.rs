@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
 use cosmwasm_std::{coins, Addr, Empty, StdError, Uint128};
-use cw20::Cw20Coin;
+use cw20::{Cw20Coin, Cw20ExecuteMsg};
 use cw_multi_test::{App, Contract, ContractWrapper, SimpleBank};
 
 use crate::error::ContractError;
@@ -72,9 +72,6 @@ fn setup_liquidity_pool() {
         .instantiate_contract(pair_id, owner.clone(), &msg, &[], "Pair")
         .unwrap();
 
-    // set up cw20 helpers
-    // let cash = Cw20Contract(cash_addr.clone());
-
     // run a simulate query with wrong token
     let query_msg = QueryMsg::Simulation {
         offer_asset: Asset {
@@ -113,6 +110,17 @@ fn setup_liquidity_pool() {
         expected_err.to_string()
     );
 
+    // provide an allowance to pay into LP
+    // let cash = Cw20Contract(cash_addr.clone());
+    let allow_msg = Cw20ExecuteMsg::IncreaseAllowance {
+        spender: pair_addr.to_string(),
+        amount: Uint128::new(10000),
+        expires: None,
+    };
+    let _ = app
+        .execute_contract(owner.clone(), cash_addr.clone(), &allow_msg, &[])
+        .unwrap();
+
     // provide liquidity with proper tokens
     let msg = ExecuteMsg::ProvideLiquidity {
         assets: [
@@ -121,14 +129,15 @@ fn setup_liquidity_pool() {
                 amount: Uint128::new(10),
             },
             Asset {
-                info: AssetInfo::Token(cash_addr.clone()),
+                info: AssetInfo::Token(cash_addr),
                 amount: Uint128(7000),
             },
         ],
         slippage_tolerance: None,
     };
+    // This is failing due to multitest limitations in 0.6
     let _ = app
-        .execute_contract(owner.clone(), pair_addr.clone(), &msg, &coins(10, "btc"))
+        .execute_contract(owner, pair_addr, &msg, &coins(10, "btc"))
         .unwrap_err();
 
     // // simulate again
