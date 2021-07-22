@@ -29,4 +29,7 @@ pub enum ContractError {
 
     #[error("Missing required data")]
     MissingData {},
+
+    #[error("Invalid address length: {0}")]
+    InvalidAddressLength(usize),
 }

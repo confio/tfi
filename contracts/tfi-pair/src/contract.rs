@@ -184,15 +184,25 @@ pub fn receive_cw20(
 //   bytes data = 2;
 // }
 // Let's do this by hand to avoid whole protobuf libs
-fn parse_init_addr(init_result: &[u8]) -> StdResult<&str> {
+fn parse_init_addr(init_result: &[u8]) -> Result<&str, ContractError> {
+    if init_result.len() < 2 {
+        return Err(ContractError::InvalidAddressLength(init_result.len()));
+    }
+
     // ensure the first byte (field 1, type 2 = 1 << 3 + 2 = 10)
     if init_result[0] != 10 {
-        return Err(StdError::generic_err("Unexpected field, must be 10"));
+        return Err(StdError::generic_err("Unexpected field, must be 10").into());
     }
     // parse the length (this will always be less than 127 in our case)
     let length = init_result[1] as usize;
+
+    if init_result.len() < 2 + length {
+        return Err(ContractError::InvalidAddressLength(init_result.len()));
+    }
+
     let addr_bytes = &init_result[2..][..length];
-    Ok(std::str::from_utf8(addr_bytes)?)
+
+    Ok(std::str::from_utf8(addr_bytes).map_err(StdError::from)?)
 }
 
 /// This just stores the result for future query
