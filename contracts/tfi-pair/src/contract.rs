@@ -57,7 +57,7 @@ pub fn instantiate(
                     }),
                 })?,
                 funds: vec![],
-                label: "".to_string(),
+                label: "uLP liquidity token".to_string(),
             }
             .into(),
             gas_limit: None,
@@ -182,26 +182,41 @@ pub fn receive_cw20(
 //   bytes data = 2;
 // }
 // Let's do this by hand to avoid whole protobuf libs
-fn parse_init_addr(init_result: &[u8]) -> StdResult<&str> {
+fn parse_init_addr(init_result: &[u8]) -> Result<&str, ContractError> {
+    if init_result.len() < 2 {
+        return Err(ContractError::InvalidAddressLength(init_result.len()));
+    }
+
     // ensure the first byte (field 1, type 2 = 1 << 3 + 2 = 10)
     if init_result[0] != 10 {
-        return Err(StdError::generic_err("Unexpected field, must be 10"));
+        return Err(StdError::generic_err("Unexpected field, must be 10").into());
     }
     // parse the length (this will always be less than 127 in our case)
     let length = init_result[1] as usize;
+
+    if init_result.len() < 2 + length {
+        return Err(ContractError::InvalidAddressLength(init_result.len()));
+    }
+
     let addr_bytes = &init_result[2..][..length];
-    Ok(std::str::from_utf8(addr_bytes)?)
+
+    Ok(std::str::from_utf8(addr_bytes).map_err(StdError::from)?)
 }
 
 /// This just stores the result for future query
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     // this is the only expected one from init
     if msg.id != 1 {
-        return Err(StdError::generic_err("Unsupported reply id"));
+        return Err(StdError::generic_err("Unsupported reply id").into());
     }
 
-    let data = msg.result.unwrap().data.unwrap();
+    let data = msg
+        .result
+        .into_result()
+        .map_err(ContractError::MessageFailure)?
+        .data
+        .ok_or(ContractError::MissingData {})?;
     let contract_addr = parse_init_addr(&data)?;
     let liquidity_token = deps.api.addr_validate(contract_addr)?;
 
@@ -229,19 +244,20 @@ pub fn provide_liquidity(
     }
 
     let pair_info: PairInfo = PAIR_INFO.load(deps.storage)?;
+    // we really should do this locally...
     let mut pools: [Asset; 2] =
         pair_info.query_pools(&deps.querier, env.contract.address.clone())?;
     let deposits: [Uint128; 2] = [
         assets
             .iter()
             .find(|a| a.info.equal(&pools[0].info))
-            .map(|a| a.amount)
-            .expect("Wrong asset info is given"),
+            .ok_or_else(|| ContractError::AssetMismatch(pools[0].info.to_string()))?
+            .amount,
         assets
             .iter()
             .find(|a| a.info.equal(&pools[1].info))
-            .map(|a| a.amount)
-            .expect("Wrong asset info is given"),
+            .ok_or_else(|| ContractError::AssetMismatch(pools[1].info.to_string()))?
+            .amount,
     ];
 
     let mut messages: Vec<SubMsg> = vec![];
@@ -388,7 +404,7 @@ pub fn swap(
         };
         ask_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(offer_asset.info.to_string()));
     }
 
     let offer_amount = offer_asset.amount;
@@ -480,7 +496,7 @@ pub fn query_simulation(
         offer_pool = pools[1].clone();
         ask_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(offer_asset.info.to_string()));
     }
 
     let (return_amount, spread_amount, commission_amount) =
@@ -511,7 +527,7 @@ pub fn query_reverse_simulation(
         ask_pool = pools[1].clone();
         offer_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(ask_asset.info.to_string()));
     }
 
     let (offer_amount, spread_amount, commission_amount) =
@@ -543,13 +559,19 @@ fn compute_swap(
         ask_pool.checked_sub(cp.multiply_ratio(1u128, offer_pool + offer_amount))?;
 
     // calculate spread & commission
+    if offer_pool.is_zero() {
+        // return Err(StdError::divide_by_zero(ask_pool.to_string()).into());
+        return Err(StdError::generic_err(
+            "Divide by zero error computing the swap",
+        ));
+    }
     let spread_amount: Uint128 = (offer_amount * Decimal::from_ratio(ask_pool, offer_pool))
         .checked_sub(return_amount)
         .unwrap_or_else(|_| Uint128::zero());
     let commission_amount: Uint128 = return_amount * Decimal::from_str(&COMMISSION_RATE).unwrap();
 
     // commission will be absorbed to pool
-    let return_amount: Uint128 = return_amount.checked_sub(commission_amount).unwrap();
+    let return_amount: Uint128 = return_amount.checked_sub(commission_amount)?;
 
     Ok((return_amount, spread_amount, commission_amount))
 }

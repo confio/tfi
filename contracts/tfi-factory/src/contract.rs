@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    attr, to_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn, Response,
+    StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::querier::query_liquidity_token;
@@ -107,28 +107,25 @@ pub fn execute_create_pair(
     )?;
 
     let pair_name = format!("{}-{}", asset_infos[0], asset_infos[1]);
-
+    let sub_msg = SubMsg::<Empty> {
+        id: 1,
+        gas_limit: None,
+        msg: WasmMsg::Instantiate {
+            code_id: config.pair_code_id,
+            funds: vec![],
+            admin: None,
+            label: pair_name.clone(),
+            msg: to_binary(&PairInstantiateMsg {
+                asset_infos,
+                token_code_id: config.token_code_id,
+            })?,
+        }
+        .into(),
+        reply_on: ReplyOn::Success,
+    };
     Ok(Response {
-        attributes: vec![
-            attr("action", "create_pair"),
-            attr("pair", pair_name.clone()),
-        ],
-        messages: vec![SubMsg {
-            id: 1,
-            gas_limit: None,
-            msg: WasmMsg::Instantiate {
-                code_id: config.pair_code_id,
-                funds: vec![],
-                admin: None,
-                label: pair_name,
-                msg: to_binary(&PairInstantiateMsg {
-                    asset_infos,
-                    token_code_id: config.token_code_id,
-                })?,
-            }
-            .into(),
-            reply_on: ReplyOn::Success,
-        }],
+        messages: vec![sub_msg],
+        attributes: vec![attr("action", "create_pair"), attr("pair", pair_name)],
         ..Response::default()
     })
 }

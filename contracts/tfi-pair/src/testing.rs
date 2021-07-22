@@ -52,7 +52,7 @@ fn proper_initialization() {
                 })
                 .unwrap(),
                 funds: vec![],
-                label: "".to_string(),
+                label: "uLP liquidity token".to_string(),
                 admin: None,
             }
             .into(),
