@@ -1,11 +1,11 @@
 use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
 use cosmwasm_std::{coins, Addr, Empty, StdError, Uint128};
-use cw20::{Cw20Coin, Cw20Contract};
+use cw20::Cw20Coin;
 use cw_multi_test::{App, Contract, ContractWrapper, SimpleBank};
 
 use crate::error::ContractError;
 use tfi::asset::{Asset, AssetInfo};
-use tfi::pair::{InstantiateMsg, QueryMsg, SimulationResponse};
+use tfi::pair::{ExecuteMsg, InstantiateMsg, QueryMsg, SimulationResponse};
 
 fn mock_app() -> App {
     let env = mock_env();
@@ -34,8 +34,8 @@ pub fn contract_cw20() -> Box<dyn Contract<Empty>> {
 }
 
 #[test]
-// receive cw20 tokens and release upon approval
-fn escrow_happy_path_cw20_tokens() {
+// just do basic setup
+fn setup_liquidity_pool() {
     let mut app = mock_app();
 
     // set personal balance
@@ -98,7 +98,7 @@ fn escrow_happy_path_cw20_tokens() {
     let query_msg = QueryMsg::Simulation {
         offer_asset: Asset {
             info: AssetInfo::Token(cash_addr.clone()),
-            amount: Uint128::new(1000),
+            amount: Uint128::new(7000),
         },
     };
     let err = app
@@ -113,9 +113,28 @@ fn escrow_happy_path_cw20_tokens() {
         expected_err.to_string()
     );
 
-    // provide liquidity
+    // provide liquidity with proper tokens
+    let msg = ExecuteMsg::ProvideLiquidity {
+        assets: [
+            Asset {
+                info: AssetInfo::Native("btc".into()),
+                amount: Uint128::new(10),
+            },
+            Asset {
+                info: AssetInfo::Token(cash_addr.clone()),
+                amount: Uint128(7000),
+            },
+        ],
+        slippage_tolerance: None,
+    };
+    let _ = app
+        .execute_contract(owner.clone(), pair_addr.clone(), &msg, &coins(10, "btc"))
+        .unwrap_err();
 
-    // simulate again
+    // // simulate again
+    // let res: SimulationResponse = app.wrap().query_wasm_smart(&pair_addr, &query_msg).unwrap();
+    // // doubling the amount of cash should return half the BTC from the LP
+    // assert_eq!(res.return_amount, Uint128::new(5));
 
     // // send some tokens to create an escrow
     // let arb = Addr::unchecked("arbiter");

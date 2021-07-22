@@ -275,9 +275,12 @@ pub fn provide_liquidity(
                 send: vec![],
             }));
         } else {
+            println!("pool amount: {}", pool.amount);
+            println!("deposits: {}", deposits[i]);
             // If the asset is native token, balance is already increased
             // To calculated properly we should subtract user deposit from the pool
             pool.amount = pool.amount.checked_sub(deposits[i])?;
+            println!("BBB");
         }
     }
 
@@ -564,7 +567,6 @@ fn compute_swap(
             "Divide by zero error computing the swap",
         ));
     }
-    println!("ask: {}, offer: {}", ask_pool, offer_pool);
     let spread_amount: Uint128 = (offer_amount * Decimal::from_ratio(ask_pool, offer_pool))
         .checked_sub(return_amount)
         .unwrap_or_else(|_| Uint128::zero());
