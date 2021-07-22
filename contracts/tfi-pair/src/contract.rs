@@ -558,6 +558,13 @@ fn compute_swap(
         ask_pool.checked_sub(cp.multiply_ratio(1u128, offer_pool + offer_amount))?;
 
     // calculate spread & commission
+    if offer_pool.is_zero() {
+        // return Err(StdError::divide_by_zero(ask_pool.to_string()).into());
+        return Err(StdError::generic_err(
+            "Divide by zero error computing the swap",
+        ));
+    }
+    println!("ask: {}, offer: {}", ask_pool, offer_pool);
     let spread_amount: Uint128 = (offer_amount * Decimal::from_ratio(ask_pool, offer_pool))
         .checked_sub(return_amount)
         .unwrap_or_else(|_| Uint128::zero());
