@@ -23,4 +23,10 @@ pub enum ContractError {
 
     #[error("Asset mismatch")]
     AssetMismatch {},
+
+    #[error("Explicit failure in message: {0}")]
+    MessageFailure(String),
+
+    #[error("Missing required data")]
+    MissingData {},
 }

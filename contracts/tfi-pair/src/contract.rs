@@ -197,13 +197,18 @@ fn parse_init_addr(init_result: &[u8]) -> StdResult<&str> {
 
 /// This just stores the result for future query
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     // this is the only expected one from init
     if msg.id != 1 {
-        return Err(StdError::generic_err("Unsupported reply id"));
+        return Err(StdError::generic_err("Unsupported reply id").into());
     }
 
-    let data = msg.result.unwrap().data.unwrap();
+    let data = msg
+        .result
+        .into_result()
+        .map_err(ContractError::MessageFailure)?
+        .data
+        .ok_or(ContractError::MissingData {})?;
     let contract_addr = parse_init_addr(&data)?;
     let liquidity_token = deps.api.addr_validate(contract_addr)?;
 
@@ -237,13 +242,13 @@ pub fn provide_liquidity(
         assets
             .iter()
             .find(|a| a.info.equal(&pools[0].info))
-            .map(|a| a.amount)
-            .expect("Wrong asset info is given"),
+            .ok_or(ContractError::AssetMismatch {})?
+            .amount,
         assets
             .iter()
             .find(|a| a.info.equal(&pools[1].info))
-            .map(|a| a.amount)
-            .expect("Wrong asset info is given"),
+            .ok_or(ContractError::AssetMismatch {})?
+            .amount,
     ];
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -549,7 +554,7 @@ fn compute_swap(
     let commission_amount: Uint128 = return_amount * Decimal::from_str(&COMMISSION_RATE).unwrap();
 
     // commission will be absorbed to pool
-    let return_amount: Uint128 = return_amount.checked_sub(commission_amount).unwrap();
+    let return_amount: Uint128 = return_amount.checked_sub(commission_amount)?;
 
     Ok((return_amount, spread_amount, commission_amount))
 }
