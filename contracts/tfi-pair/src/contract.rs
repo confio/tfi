@@ -252,12 +252,12 @@ pub fn provide_liquidity(
         assets
             .iter()
             .find(|a| a.info.equal(&pools[0].info))
-            .ok_or(ContractError::AssetMismatch {})?
+            .ok_or_else(|| ContractError::AssetMismatch(pools[0].info.to_string()))?
             .amount,
         assets
             .iter()
             .find(|a| a.info.equal(&pools[1].info))
-            .ok_or(ContractError::AssetMismatch {})?
+            .ok_or_else(|| ContractError::AssetMismatch(pools[1].info.to_string()))?
             .amount,
     ];
 
@@ -404,7 +404,7 @@ pub fn swap(
         };
         ask_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(offer_asset.info.to_string()));
     }
 
     let offer_amount = offer_asset.amount;
@@ -495,7 +495,7 @@ pub fn query_simulation(
         offer_pool = pools[1].clone();
         ask_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(offer_asset.info.to_string()));
     }
 
     let (return_amount, spread_amount, commission_amount) =
@@ -526,7 +526,7 @@ pub fn query_reverse_simulation(
         ask_pool = pools[1].clone();
         offer_pool = pools[0].clone();
     } else {
-        return Err(ContractError::AssetMismatch {});
+        return Err(ContractError::AssetMismatch(ask_asset.info.to_string()));
     }
 
     let (offer_amount, spread_amount, commission_amount) =

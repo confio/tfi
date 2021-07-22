@@ -21,8 +21,8 @@ pub enum ContractError {
     #[error("Max slippage assertion")]
     MaxSlippageAssertion {},
 
-    #[error("Asset mismatch")]
-    AssetMismatch {},
+    #[error("Asset mismatch: {0}")]
+    AssetMismatch(String),
 
     #[error("Explicit failure in message: {0}")]
     MessageFailure(String),
