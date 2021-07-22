@@ -36,4 +36,6 @@ thiserror = { version = "1.0.20" }
 [dev-dependencies]
 cosmwasm-schema = "0.14.0"
 cosmwasm-storage = { version = "0.14.0" }
+cw20-base = { version = "0.6.0", feautres = ["library"] }
+cw-multi-test = { version = "0.6.0" }
 tfi-mocks = { path = "../../packages/mocks", version = "0.0.5"}
