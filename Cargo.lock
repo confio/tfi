@@ -695,7 +695,7 @@ dependencies = [
 
 [[package]]
 name = "tfi"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -708,7 +708,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-factory"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-mocks"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -734,7 +734,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-pair"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
