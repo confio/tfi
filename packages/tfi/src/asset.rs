@@ -40,21 +40,20 @@ impl Asset {
             })),
             AssetInfo::Native(_) => Ok(CosmosMsg::Bank(BankMsg::Send {
                 to_address: recipient.to_string(),
-                amount: vec![self.deduct_tax()?],
+                amount: vec![self.to_coin()?],
             })),
         }
     }
 
-    // TODO: rename this
-    pub fn deduct_tax(&self) -> StdResult<Coin> {
-        let amount = self.amount;
-        if let AssetInfo::Native(denom) = &self.info {
-            Ok(Coin {
+    pub fn to_coin(&self) -> StdResult<Coin> {
+        match &self.info {
+            AssetInfo::Native(denom) => Ok(Coin {
                 denom: denom.clone(),
-                amount,
-            })
-        } else {
-            Err(StdError::generic_err("cannot deduct tax from token asset"))
+                amount: self.amount,
+            }),
+            _ => Err(StdError::generic_err(
+                "cannot convert cw20 asset to native Coin",
+            )),
         }
     }
 

@@ -161,7 +161,7 @@ fn test_asset() {
         info: AssetInfo::Native("uusd".to_string()),
     };
     assert_eq!(
-        native_token_asset.deduct_tax().unwrap(),
+        native_token_asset.to_coin().unwrap(),
         Coin {
             denom: "uusd".to_string(),
             amount: Uint128::new(123123),
