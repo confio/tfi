@@ -420,18 +420,15 @@ pub fn swap(
         spread_amount,
     )?;
 
-    // compute tax
-    let return_asset = Asset {
+    let return_msg = Asset {
         info: ask_pool.info.clone(),
         amount: return_amount,
-    };
+    }
+    .into_msg(to.unwrap_or(sender))?;
 
     // 1. send collateral token from the contract to a user
     // 2. send inactive commission to collector
-    Ok(Response {
-        messages: vec![return_asset
-            .into_msg(to.unwrap_or(sender))
-            .map(SubMsg::new)?],
+    let mut res = Response {
         attributes: vec![
             attr("action", "swap"),
             attr("offer_asset", offer_asset.info.to_string()),
@@ -442,7 +439,9 @@ pub fn swap(
             attr("commission_amount", commission_amount.to_string()),
         ],
         ..Response::default()
-    })
+    };
+    res.add_message(return_msg);
+    Ok(res)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
