@@ -1,14 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "InstantiateMsg",
+  "title": "PairInfo",
   "type": "object",
   "required": [
     "asset_infos",
-    "token_code_id"
+    "contract_addr",
+    "liquidity_token"
   ],
   "properties": {
     "asset_infos": {
-      "description": "Asset infos",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssetInfo"
@@ -16,11 +16,11 @@
       "maxItems": 2,
       "minItems": 2
     },
-    "token_code_id": {
-      "description": "Token contract code id for initialization",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "contract_addr": {
+      "$ref": "#/definitions/Addr"
+    },
+    "liquidity_token": {
+      "$ref": "#/definitions/Addr"
     }
   },
   "definitions": {
