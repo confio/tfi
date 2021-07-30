@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IsWhitelistedResponse",
+  "type": "object",
+  "required": [
+    "whitelisted"
+  ],
+  "properties": {
+    "whitelisted": {
+      "type": "boolean"
+    }
+  }
+}
