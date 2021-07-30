@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn, Response,
-    StdError, StdResult, SubMsg, WasmMsg,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    SubMsg, WasmMsg,
 };
 
 use crate::querier::query_liquidity_token;
@@ -78,10 +78,7 @@ pub fn execute_update_config(
 
     CONFIG.save(deps.storage, &config)?;
 
-    Ok(Response {
-        attributes: vec![attr("action", "update_config")],
-        ..Response::default()
-    })
+    Ok(Response::new().add_attribute("action", "update_config"))
 }
 
 // Anyone can execute it to create swap pair
@@ -107,27 +104,22 @@ pub fn execute_create_pair(
     )?;
 
     let pair_name = format!("{}-{}", asset_infos[0], asset_infos[1]);
-    let sub_msg = SubMsg::<Empty> {
-        id: 1,
-        gas_limit: None,
-        msg: WasmMsg::Instantiate {
-            code_id: config.pair_code_id,
-            funds: vec![],
-            admin: None,
-            label: pair_name.clone(),
-            msg: to_binary(&PairInstantiateMsg {
-                asset_infos,
-                token_code_id: config.token_code_id,
-            })?,
-        }
-        .into(),
-        reply_on: ReplyOn::Success,
+    let msg = WasmMsg::Instantiate {
+        code_id: config.pair_code_id,
+        funds: vec![],
+        admin: None,
+        label: pair_name.clone(),
+        msg: to_binary(&PairInstantiateMsg {
+            asset_infos,
+            token_code_id: config.token_code_id,
+        })?,
     };
-    Ok(Response {
-        messages: vec![sub_msg],
-        attributes: vec![attr("action", "create_pair"), attr("pair", pair_name)],
-        ..Response::default()
-    })
+    let msg = SubMsg::reply_on_success(msg, 1);
+    let res = Response::new()
+        .add_submessage(msg)
+        .add_attribute("action", "create_pair")
+        .add_attribute("pair", pair_name);
+    Ok(res)
 }
 
 /// This just stores the result for future query
@@ -153,13 +145,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         },
     )?;
 
-    Ok(Response {
-        attributes: vec![
-            attr("pair_contract_addr", pair_contract.as_str()),
-            attr("liquidity_token_addr", liquidity_token.as_str()),
-        ],
-        ..Response::default()
-    })
+    Ok(Response::new()
+        .add_attribute("pair_contract_addr", pair_contract)
+        .add_attribute("liquidity_token_addr", liquidity_token))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
