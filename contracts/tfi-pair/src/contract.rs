@@ -292,17 +292,19 @@ pub fn provide_liquidity(
         )
     };
 
-    Ok(res.
-        add_attribute("share", share.to_string()).
-        // mint LP token to sender
-        add_message(WasmMsg::Execute {
+    // mint LP token to sender
+    let msg = WasmMsg::Execute {
         contract_addr: pair_info.liquidity_token.into(),
         msg: to_binary(&Cw20ExecuteMsg::Mint {
             recipient: info.sender.to_string(),
             amount: share,
         })?,
         funds: vec![],
-    }))
+    };
+    let res = res
+        .add_attribute("share", share.to_string())
+        .add_message(msg);
+    Ok(res)
 }
 
 pub fn withdraw_liquidity(
