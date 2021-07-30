@@ -229,7 +229,7 @@ jobs:
       - run:
           name: Install check_contract
           # Uses --debug for compilation speed
-          command: cargo install --debug --version 0.15.0 --features iterator --example check_contract -- cosmwasm-vm
+          command: cargo install --debug --version 0.16.0-rc5 --features iterator --example check_contract -- cosmwasm-vm
       - save_cache:
           paths:
             - /usr/local/cargo/registry
@@ -270,7 +270,7 @@ jobs:
       - run:
           name: Build development contracts
           command: |
-            docker run --volumes-from with_code cosmwasm/workspace-optimizer:0.11.2
+            docker run --volumes-from with_code cosmwasm/workspace-optimizer:0.11.4
             docker cp with_code:/code/artifacts ./artifacts
       - run:
           name: Show data

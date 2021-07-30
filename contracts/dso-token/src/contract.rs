@@ -189,14 +189,14 @@ mod tests {
     use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
     use cw20::{Cw20Coin, Cw20Contract, TokenInfoResponse};
     use cw4::Member;
-    use cw_multi_test::{next_block, App, Contract, ContractWrapper, SimpleBank};
+    use cw_multi_test::{next_block, App, BankKeeper, Contract, ContractWrapper, Executor};
 
     fn mock_app() -> App {
         let env = mock_env();
         let api = Box::new(MockApi::default());
-        let bank = SimpleBank {};
+        let bank = BankKeeper::new();
 
-        App::new(api, env.block, bank, || Box::new(MockStorage::new()))
+        App::new(api, env.block, bank, Box::new(MockStorage::new()))
     }
 
     pub fn contract_group() -> Box<dyn Contract<Empty>> {
@@ -247,7 +247,7 @@ mod tests {
 
             // set personal balance
             let owner = Addr::unchecked(OWNER);
-            router.set_bank_balance(&owner, config.init_funds).unwrap();
+            router.init_bank_balance(&owner, config.init_funds).unwrap();
 
             // create group contract
             let group_id = router.store_code(contract_group());

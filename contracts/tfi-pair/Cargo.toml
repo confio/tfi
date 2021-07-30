@@ -25,17 +25,17 @@ backtraces = ["cosmwasm-std/backtraces"]
 [dependencies]
 integer-sqrt = "0.1.5"
 tfi = { path = "../../packages/tfi", default-features = false, version = "0.1.0"}
-cw2 = { version = "0.7" }
-cw20 = { version = "0.7" }
-cosmwasm-std = { version = "0.15.0" }
-cw-storage-plus = { version = "0.7.0" }
+cw2 = { version = "0.8.0-rc1" }
+cw20 = { version = "0.8.0-rc1" }
+cosmwasm-std = { version = "0.16.0-rc5" }
+cw-storage-plus = { version = "0.8.0-rc1" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.20" }
 
 [dev-dependencies]
-cosmwasm-schema = "0.15.0"
-cosmwasm-storage = { version = "0.15.0", features = ["iterator"] }
-cw20-base = { version = "0.7.0", features = ["library"] }
-cw-multi-test = { version = "0.7.0" }
+cosmwasm-schema = "0.16.0-rc5"
+cosmwasm-storage = { version = "0.16.0-rc5", features = ["iterator"] }
+cw20-base = { version = "0.8.0-rc1", features = ["library"] }
+cw-multi-test = { version = "0.8.0-rc1" }
 tfi-mocks = { path = "../../packages/mocks", version = "0.1.0"}
