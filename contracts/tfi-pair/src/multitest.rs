@@ -359,6 +359,7 @@ impl SuiteConfig {
                     decimals: 2,
                     initial_balances,
                     mint: None,
+                    marketing: None,
                 },
                 &[],
                 "Cash",
@@ -424,6 +425,7 @@ fn setup_liquidity_pool() {
             amount: Uint128::new(50000),
         }],
         mint: None,
+        marketing: None,
     };
     let cash_addr = app
         .instantiate_contract(cw20_id, owner.clone(), &msg, &[], "CASH", None)
