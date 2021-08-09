@@ -193,9 +193,9 @@ mod tests {
 
     fn mock_app() -> App {
         let env = mock_env();
-        let api = Box::new(MockApi::default());
+        let api = MockApi::default();
         let bank = BankKeeper::new();
-        let storage = Box::new(MockStorage::new());
+        let storage = MockStorage::new();
 
         App::new(api, env.block, bank, storage)
     }
@@ -266,7 +266,7 @@ mod tests {
                 ],
             };
             let group_addr = router
-                .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST")
+                .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST", None)
                 .unwrap();
             router.update_block(next_block);
 
@@ -280,7 +280,7 @@ mod tests {
                 whitelist_group: group_addr.to_string(),
             };
             let cw20_addr = router
-                .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH")
+                .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH", None)
                 .unwrap();
             router.update_block(next_block);
 

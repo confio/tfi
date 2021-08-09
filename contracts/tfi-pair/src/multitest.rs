@@ -11,9 +11,9 @@ use tfi::pair::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulationRes
 
 fn mock_app() -> App {
     let env = mock_env();
-    let api = Box::new(MockApi::default());
+    let api = MockApi::default();
     let bank = BankKeeper::new();
-    let storage = Box::new(MockStorage::new());
+    let storage = MockStorage::new();
 
     App::new(api, env.block, bank, storage)
 }
@@ -362,6 +362,7 @@ impl SuiteConfig {
                 },
                 &[],
                 "Cash",
+                None,
             )
             .map_err(|err| anyhow!(err))?;
 
@@ -378,6 +379,7 @@ impl SuiteConfig {
                 },
                 &[],
                 "Pair",
+                None,
             )
             .map_err(|err| anyhow!(err))?;
 
@@ -424,7 +426,7 @@ fn setup_liquidity_pool() {
         mint: None,
     };
     let cash_addr = app
-        .instantiate_contract(cw20_id, owner.clone(), &msg, &[], "CASH")
+        .instantiate_contract(cw20_id, owner.clone(), &msg, &[], "CASH", None)
         .unwrap();
 
     // set up pair contract
@@ -437,7 +439,7 @@ fn setup_liquidity_pool() {
         token_code_id: cw20_id,
     };
     let pair_addr = app
-        .instantiate_contract(pair_id, owner.clone(), &msg, &[], "Pair")
+        .instantiate_contract(pair_id, owner.clone(), &msg, &[], "Pair", None)
         .unwrap();
 
     // run a simulate query with wrong token

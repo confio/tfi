@@ -37,7 +37,7 @@ thiserror = { version = "1.0.20" }
 cosmwasm-schema = "0.16.0-rc5"
 cosmwasm-storage = { version = "0.16.0-rc5", features = ["iterator"] }
 cw20-base = { version = "0.8.0-rc1", features = ["library"] }
-cw-multi-test = { version = "=0.8.0-rc1" }
+cw-multi-test = { version = "=0.8.0-rc2" }
 tfi-mocks = { path = "../../packages/mocks", version = "0.1.0"}
 derivative = "2"
 anyhow = { version = "1", features = ["backtrace"] }
