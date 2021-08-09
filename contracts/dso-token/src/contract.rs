@@ -195,8 +195,9 @@ mod tests {
         let env = mock_env();
         let api = Box::new(MockApi::default());
         let bank = BankKeeper::new();
+        let storage = Box::new(MockStorage::new());
 
-        App::new(api, env.block, bank, Box::new(MockStorage::new()))
+        App::new(api, env.block, bank, storage)
     }
 
     pub fn contract_group() -> Box<dyn Contract<Empty>> {
