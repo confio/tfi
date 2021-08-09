@@ -37,7 +37,12 @@ pub fn contract_cw20() -> Box<dyn Contract<Empty>> {
 
 #[track_caller]
 // Checks if allowances on cw20 contracts are as expected
-fn assert_allowances(app: &App, addr: Addr, owner: Addr, allowances: Vec<cw20::AllowanceInfo>) {
+fn assert_allowances(
+    app: &App,
+    contract: &Addr,
+    owner: &Addr,
+    allowances: Vec<cw20::AllowanceInfo>,
+) {
     let nonzero_allow = |allow: &cw20::AllowanceInfo| allow.allowance != Uint128::zero();
     let allow_cmp = |l: &cw20::AllowanceInfo, r: &cw20::AllowanceInfo| l.spender.cmp(&r.spender);
 
@@ -47,17 +52,14 @@ fn assert_allowances(app: &App, addr: Addr, owner: Addr, allowances: Vec<cw20::A
     let mut result: cw20::AllAllowancesResponse = app
         .wrap()
         .query_wasm_smart(
-            addr.clone(),
+            contract.clone(),
             &cw20_base::msg::QueryMsg::AllAllowances {
                 owner: owner.to_string(),
                 start_after: None,
                 limit: None,
             },
         )
-        .expect(&format!(
-            "Query for allowances for {} on {} failed",
-            owner, addr
-        ));
+        .unwrap_or_else(|_| panic!("Query for allowances for {} on {} failed", owner, contract));
 
     result.allowances = result
         .allowances
@@ -71,19 +73,16 @@ fn assert_allowances(app: &App, addr: Addr, owner: Addr, allowances: Vec<cw20::A
 
 #[track_caller]
 // Helper function asserting proper balance on cw20 contract
-fn assert_balance(app: &App, addr: Addr, owner: Addr, balance: u128) {
+fn assert_balance(app: &App, contract: &Addr, owner: &Addr, balance: u128) {
     let result: cw20::BalanceResponse = app
         .wrap()
         .query_wasm_smart(
-            addr.clone(),
+            contract.clone(),
             &cw20_base::msg::QueryMsg::Balance {
                 address: owner.to_string(),
             },
         )
-        .expect(&format!(
-            "Query for balance for {} on {} failed",
-            owner, addr
-        ));
+        .unwrap_or_else(|_| panic!("Query for balance for {} on {} failed", owner, contract));
 
     assert_eq!(
         result,
@@ -95,11 +94,11 @@ fn assert_balance(app: &App, addr: Addr, owner: Addr, balance: u128) {
 
 #[track_caller]
 // Helper function asserting proper balance of native token
-fn assert_native_balance(app: &App, denom: &str, owner: Addr, balance: u128) {
+fn assert_native_balance(app: &App, denom: &str, owner: &Addr, balance: u128) {
     let result = app
         .wrap()
         .query_balance(owner.clone(), denom)
-        .expect(&format!("Query for balance of {} for {}", denom, owner));
+        .unwrap_or_else(|_| panic!("Query for balance of {} for {}", denom, owner));
 
     assert_eq!(result, coin(balance, denom));
 }
@@ -236,7 +235,13 @@ fn single_swap() {
     let cw20_id = app.store_code(contract_cw20());
     let pair_id = app.store_code(contract_pair());
 
-    // Initialize actors
+    // Initialize actors:
+    // cash: cw20 contract
+    // pair: tfi-pair contract between btc (native) and cash (cw20)
+    // liquidity token (lt): cw20 contract for pair liquidity tokens
+    // liquidity provider (lp): 2000btc + 6000cash
+    // trader: 1000btc
+    // trader_recv: nothing (should receive funds later)
     let lp = Addr::unchecked("liquidity-provider");
     app.init_bank_balance(&lp, coins(2000, "btc")).unwrap();
 
@@ -322,19 +327,21 @@ fn single_swap() {
     )
     .unwrap();
 
-    assert_native_balance(&app, "btc", lp.clone(), 0);
-    assert_native_balance(&app, "btc", trader.clone(), 1000);
-    assert_native_balance(&app, "btc", trader_recv.clone(), 0);
-    assert_native_balance(&app, "btc", pair.clone(), 2000);
-    assert_balance(&app, cash.clone(), lp.clone(), 0);
-    assert_balance(&app, cash.clone(), trader.clone(), 0);
-    assert_balance(&app, cash.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, cash.clone(), pair.clone(), 6000);
-    assert_balance(&app, lt.clone(), lp.clone(), 3464);
-    assert_balance(&app, lt.clone(), trader.clone(), 0);
-    assert_balance(&app, lt.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, lt.clone(), pair.clone(), 0);
-    assert_allowances(&app, cash.clone(), lp.clone(), vec![]);
+    // liquidity provider --> pair: 6000btc + 2000cash
+    // liquidity provider: 3464lt minted by pair (provided sqrt(6000 [btc] * 2000 [cash])
+    assert_native_balance(&app, "btc", &lp, 0);
+    assert_native_balance(&app, "btc", &trader, 1000);
+    assert_native_balance(&app, "btc", &trader_recv, 0);
+    assert_native_balance(&app, "btc", &pair, 2000);
+    assert_balance(&app, &cash, &lp, 0);
+    assert_balance(&app, &cash, &trader, 0);
+    assert_balance(&app, &cash, &trader_recv, 0);
+    assert_balance(&app, &cash, &pair, 6000);
+    assert_balance(&app, &lt, &lp, 3464);
+    assert_balance(&app, &lt, &trader, 0);
+    assert_balance(&app, &lt, &trader_recv, 0);
+    assert_balance(&app, &lt, &pair, 0);
+    assert_allowances(&app, &cash, &lp, vec![]);
 
     // Swap btc for cash
     app.execute_contract(
@@ -353,19 +360,24 @@ fn single_swap() {
     )
     .unwrap();
 
-    assert_native_balance(&app, "btc", lp.clone(), 0);
-    assert_native_balance(&app, "btc", trader.clone(), 0);
-    assert_native_balance(&app, "btc", trader_recv.clone(), 0);
-    assert_native_balance(&app, "btc", pair.clone(), 3000);
-    assert_balance(&app, cash.clone(), lp.clone(), 0);
-    assert_balance(&app, cash.clone(), trader.clone(), 1994);
-    assert_balance(&app, cash.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, cash.clone(), pair.clone(), 4006);
-    assert_balance(&app, lt.clone(), lp.clone(), 3464);
-    assert_balance(&app, lt.clone(), trader.clone(), 0);
-    assert_balance(&app, lt.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, lt.clone(), pair.clone(), 0);
-    assert_allowances(&app, cash.clone(), lp.clone(), vec![]);
+    // trader -> pair: 1000btc
+    // pair -> trader: 1994cash, explanaction:
+    //   btc to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
+    //   btc to be paid out: 6000 - 2000 = 4000
+    //   btc to be paid out after commission: 2000 - 2000 * 0.03% = 2000 - 2000 * 0.997 = 1994
+    assert_native_balance(&app, "btc", &lp, 0);
+    assert_native_balance(&app, "btc", &trader, 0);
+    assert_native_balance(&app, "btc", &trader_recv, 0);
+    assert_native_balance(&app, "btc", &pair, 3000);
+    assert_balance(&app, &cash, &lp, 0);
+    assert_balance(&app, &cash, &trader, 1994);
+    assert_balance(&app, &cash, &trader_recv, 0);
+    assert_balance(&app, &cash, &pair, 4006);
+    assert_balance(&app, &lt, &lp, 3464);
+    assert_balance(&app, &lt, &trader, 0);
+    assert_balance(&app, &lt, &trader_recv, 0);
+    assert_balance(&app, &lt, &pair, 0);
+    assert_allowances(&app, &cash, &lp, vec![]);
 
     // Swap cash for btc
     app.execute_contract(
@@ -385,19 +397,24 @@ fn single_swap() {
     )
     .unwrap();
 
-    assert_native_balance(&app, "btc", lp.clone(), 0);
-    assert_native_balance(&app, "btc", trader.clone(), 0);
-    assert_native_balance(&app, "btc", trader_recv.clone(), 599);
-    assert_native_balance(&app, "btc", pair.clone(), 2401);
-    assert_balance(&app, cash.clone(), lp.clone(), 0);
-    assert_balance(&app, cash.clone(), trader.clone(), 994);
-    assert_balance(&app, cash.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, cash.clone(), pair.clone(), 5006);
-    assert_balance(&app, lt.clone(), lp.clone(), 3464);
-    assert_balance(&app, lt.clone(), trader.clone(), 0);
-    assert_balance(&app, lt.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, lt.clone(), pair.clone(), 0);
-    assert_allowances(&app, cash.clone(), lp.clone(), vec![]);
+    // trader -> pair: 1000cash
+    // pair -> trader_recv: 599 cash, explanation:
+    //   cash to be left on contract: 3000 * 4006 / (4006 + 1000) = 2400
+    //   cash to be paid out: 3000 - 2400 = 600
+    //   cash to be paid out after commission: 600 - 600 * 0.003 = 599
+    assert_native_balance(&app, "btc", &lp, 0);
+    assert_native_balance(&app, "btc", &trader, 0);
+    assert_native_balance(&app, "btc", &trader_recv, 599);
+    assert_native_balance(&app, "btc", &pair, 2401);
+    assert_balance(&app, &cash, &lp, 0);
+    assert_balance(&app, &cash, &trader, 994);
+    assert_balance(&app, &cash, &trader_recv, 0);
+    assert_balance(&app, &cash, &pair, 5006);
+    assert_balance(&app, &lt, &lp, 3464);
+    assert_balance(&app, &lt, &trader, 0);
+    assert_balance(&app, &lt, &trader_recv, 0);
+    assert_balance(&app, &lt, &pair, 0);
+    assert_allowances(&app, &cash, &lp, vec![]);
 
     // Withdraw liqidity
     app.execute_contract(
@@ -412,17 +429,23 @@ fn single_swap() {
     )
     .unwrap();
 
-    assert_native_balance(&app, "btc", lp.clone(), 2401);
-    assert_native_balance(&app, "btc", trader.clone(), 0);
-    assert_native_balance(&app, "btc", trader_recv.clone(), 599);
-    assert_native_balance(&app, "btc", pair.clone(), 0);
-    assert_balance(&app, cash.clone(), lp.clone(), 5006);
-    assert_balance(&app, cash.clone(), trader.clone(), 994);
-    assert_balance(&app, cash.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, cash.clone(), pair.clone(), 0);
-    assert_balance(&app, lt.clone(), lp.clone(), 0);
-    assert_balance(&app, lt.clone(), trader.clone(), 0);
-    assert_balance(&app, lt.clone(), trader_recv.clone(), 0);
-    assert_balance(&app, lt.clone(), pair.clone(), 0);
-    assert_allowances(&app, cash.clone(), lp.clone(), vec![]);
+    // liquidity provider -> pair: 3464lt (all burned in pair)
+    // pair -> liquidity provider: 2401btc + 5006cash (whole pair - lp owned 100% of lt)
+    //
+    // Note, that lp provided initially 6000btc and 2000cash, 6000 * 2000 = 12*10^6
+    // Lp payed out 2401btc, and 5006 cash, 2401 * 5006 > 12 * 10^6
+    // 1btc and 6cash is what lp earned on commissions, as 2400 * 5000 = 12*10^6
+    assert_native_balance(&app, "btc", &lp, 2401);
+    assert_native_balance(&app, "btc", &trader, 0);
+    assert_native_balance(&app, "btc", &trader_recv, 599);
+    assert_native_balance(&app, "btc", &pair, 0);
+    assert_balance(&app, &cash, &lp, 5006);
+    assert_balance(&app, &cash, &trader, 994);
+    assert_balance(&app, &cash, &trader_recv, 0);
+    assert_balance(&app, &cash, &pair, 0);
+    assert_balance(&app, &lt, &lp, 0);
+    assert_balance(&app, &lt, &trader, 0);
+    assert_balance(&app, &lt, &trader_recv, 0);
+    assert_balance(&app, &lt, &pair, 0);
+    assert_allowances(&app, &cash, &lp, vec![]);
 }
