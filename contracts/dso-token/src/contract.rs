@@ -495,7 +495,7 @@ mod tests {
                 },
                 &[],
             )
-            .unwrap_err();
+            .unwrap();
 
         let marketing: cw20::MarketingInfoResponse = router
             .wrap()
@@ -578,7 +578,7 @@ mod tests {
                 &ExecuteMsg::UploadLogo(cw20::Logo::Url(logo_url.clone())),
                 &[],
             )
-            .unwrap_err();
+            .unwrap();
 
         let marketing: cw20::MarketingInfoResponse = router
             .wrap()
