@@ -3,7 +3,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw20_base::allowances::query_allowance;
-use cw20_base::contract::{query_balance, query_minter, query_token_info};
+use cw20_base::contract::{
+    query_balance, query_download_logo, query_marketing_info, query_minter, query_token_info,
+};
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw4::Cw4Contract;
 
@@ -30,7 +32,7 @@ pub fn instantiate(
         decimals: msg.decimals,
         initial_balances: msg.initial_balances,
         mint: msg.mint,
-        marketing: None,
+        marketing: msg.marketing.map(Into::into),
     };
     cw20_base::contract::instantiate(deps.branch(), env, info, cw20_msg)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -147,22 +149,14 @@ pub fn execute(
             project,
             description,
             marketing,
-        } => {
-            if let Some(marketing) = &marketing {
-                verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&marketing])?;
-            } else {
-                verify_sender_on_whitelist(&deps, &info.sender)?;
-            }
-
-            cw20_base::contract::execute_update_marketing(
-                deps,
-                env,
-                info,
-                project,
-                description,
-                marketing,
-            )
-        }
+        } => cw20_base::contract::execute_update_marketing(
+            deps,
+            env,
+            info,
+            project,
+            description,
+            marketing,
+        ),
         ExecuteMsg::UploadLogo(logo) => {
             cw20_base::contract::execute_upload_logo(deps, env, info, logo)
         }
@@ -202,11 +196,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::AllAccounts { start_after, limit } => {
             to_binary(&query_all_accounts(deps, start_after, limit)?)
         }
+        QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
+        QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::msg::InstantiateMarketingInfo;
+
     use super::*;
 
     use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
@@ -251,6 +249,7 @@ mod tests {
     struct SuiteConfig {
         init_funds: Vec<Coin>,
         initial_balances: Vec<Cw20Coin>,
+        marketing: Option<InstantiateMarketingInfo>,
     }
 
     impl SuiteConfig {
@@ -301,6 +300,7 @@ mod tests {
                 decimals: 9,
                 initial_balances: config.initial_balances,
                 mint: None,
+                marketing: config.marketing,
                 whitelist_group: group_addr.to_string(),
             };
             let cw20_addr = router
@@ -334,6 +334,7 @@ mod tests {
                     amount,
                 },
             ],
+            ..SuiteConfig::default()
         }
         .init();
 
@@ -370,6 +371,7 @@ mod tests {
                     amount,
                 },
             ],
+            ..SuiteConfig::default()
         }
         .init();
 
@@ -435,5 +437,162 @@ mod tests {
             )
             .unwrap();
         assert!(!is_whitelisted.whitelisted);
+    }
+
+    #[test]
+    fn update_marketing() {
+        let Suite {
+            mut router,
+            cw20_addr,
+            ..
+        } = SuiteConfig {
+            marketing: Some(InstantiateMarketingInfo {
+                project: None,
+                description: None,
+                marketing: Some(MEMBER1.to_owned()),
+                logo: None,
+            }),
+            ..SuiteConfig::default()
+        }
+        .init();
+
+        router
+            .execute_contract(
+                Addr::unchecked(MEMBER1),
+                cw20_addr.clone(),
+                &ExecuteMsg::UpdateMarketing {
+                    project: Some("Project".to_owned()),
+                    description: None,
+                    marketing: Some(NON_MEMBER.to_owned()),
+                },
+                &[],
+            )
+            .unwrap();
+
+        let marketing: cw20::MarketingInfoResponse = router
+            .wrap()
+            .query_wasm_smart(&cw20_addr, &QueryMsg::MarketingInfo {})
+            .unwrap();
+
+        assert_eq!(
+            marketing,
+            cw20::MarketingInfoResponse {
+                project: Some("Project".to_owned()),
+                description: None,
+                marketing: Some(Addr::unchecked(NON_MEMBER)),
+                logo: None,
+            }
+        );
+
+        router
+            .execute_contract(
+                Addr::unchecked(NON_MEMBER),
+                cw20_addr.clone(),
+                &ExecuteMsg::UpdateMarketing {
+                    project: None,
+                    description: Some("Description".to_owned()),
+                    marketing: None,
+                },
+                &[],
+            )
+            .unwrap();
+
+        let marketing: cw20::MarketingInfoResponse = router
+            .wrap()
+            .query_wasm_smart(&cw20_addr, &QueryMsg::MarketingInfo {})
+            .unwrap();
+
+        assert_eq!(
+            marketing,
+            cw20::MarketingInfoResponse {
+                project: Some("Project".to_owned()),
+                description: Some("Description".to_owned()),
+                marketing: Some(Addr::unchecked(NON_MEMBER)),
+                logo: None,
+            }
+        );
+    }
+
+    #[test]
+    fn update_logo() {
+        let Suite {
+            mut router,
+            cw20_addr,
+            ..
+        } = SuiteConfig {
+            marketing: Some(InstantiateMarketingInfo {
+                project: None,
+                description: None,
+                marketing: Some(MEMBER1.to_owned()),
+                logo: None,
+            }),
+            ..SuiteConfig::default()
+        }
+        .init();
+
+        let logo_url = "https://logo.url/logo.svg".to_owned();
+
+        router
+            .execute_contract(
+                Addr::unchecked(MEMBER1),
+                cw20_addr.clone(),
+                &ExecuteMsg::UploadLogo(cw20::Logo::Url(logo_url.clone())),
+                &[],
+            )
+            .unwrap();
+
+        let marketing: cw20::MarketingInfoResponse = router
+            .wrap()
+            .query_wasm_smart(&cw20_addr, &QueryMsg::MarketingInfo {})
+            .unwrap();
+
+        assert_eq!(
+            marketing,
+            cw20::MarketingInfoResponse {
+                project: None,
+                description: None,
+                marketing: Some(Addr::unchecked(MEMBER1)),
+                logo: Some(cw20::LogoInfo::Url(logo_url)),
+            }
+        );
+
+        router
+            .execute_contract(
+                Addr::unchecked(MEMBER1),
+                cw20_addr.clone(),
+                &ExecuteMsg::UpdateMarketing {
+                    project: None,
+                    description: None,
+                    marketing: Some(NON_MEMBER.to_owned()),
+                },
+                &[],
+            )
+            .unwrap();
+
+        let logo_url = "https://logo.url/updated_logo.svg".to_owned();
+
+        router
+            .execute_contract(
+                Addr::unchecked(NON_MEMBER),
+                cw20_addr.clone(),
+                &ExecuteMsg::UploadLogo(cw20::Logo::Url(logo_url.clone())),
+                &[],
+            )
+            .unwrap();
+
+        let marketing: cw20::MarketingInfoResponse = router
+            .wrap()
+            .query_wasm_smart(&cw20_addr, &QueryMsg::MarketingInfo {})
+            .unwrap();
+
+        assert_eq!(
+            marketing,
+            cw20::MarketingInfoResponse {
+                project: None,
+                description: None,
+                marketing: Some(Addr::unchecked(NON_MEMBER)),
+                logo: Some(cw20::LogoInfo::Url(logo_url)),
+            }
+        );
     }
 }

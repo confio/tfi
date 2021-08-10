@@ -1,6 +1,27 @@
-use cw20::{Cw20Coin, MinterResponse};
+use cw20::{Cw20Coin, Logo, MinterResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+// TODO: Get rid of `InstantiateMarketingInfo` and reuse `cw20_base::msg::InstantiateMarketingInfo`
+// when it gains all required traits
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+pub struct InstantiateMarketingInfo {
+    pub project: Option<String>,
+    pub description: Option<String>,
+    pub marketing: Option<String>,
+    pub logo: Option<Logo>,
+}
+
+impl From<InstantiateMarketingInfo> for cw20_base::msg::InstantiateMarketingInfo {
+    fn from(src: InstantiateMarketingInfo) -> Self {
+        Self {
+            project: src.project,
+            description: src.description,
+            marketing: src.marketing,
+            logo: src.logo,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -9,6 +30,7 @@ pub struct InstantiateMsg {
     pub decimals: u8,
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
+    pub marketing: Option<InstantiateMarketingInfo>,
     /// This is the address of a cw4 compatible contract that will serve as a whitelist
     pub whitelist_group: String,
 }
@@ -53,6 +75,16 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    /// Only with "marketing" extension
+    /// Returns more metadata on the contract to display in the client:
+    /// - description, logo, project url, etc.
+    /// Return type: MarketingInfoResponse
+    MarketingInfo {},
+    /// Only with "marketing" extension
+    /// Downloads the embedded logo data (if stored on chain). Errors if no logo data stored for this
+    /// contract.
+    /// Return type: DownloadLogoResponse.
+    DownloadLogo {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
