@@ -202,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "cw-controllers"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0da0838f230f3b6b75d19619019815ccfb18bf333cd477350431ae6c6eab221c"
+checksum = "cc53e70070f21551821040ea4516fdd5b24622103e9f695169767113451147ad"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
@@ -216,9 +216,9 @@ dependencies = [
 
 [[package]]
 name = "cw-multi-test"
-version = "0.8.0-rc1"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5903e744ca24cfdc74e0b4ea3664492882c0841be88d3641e043e0ba437b3929"
+checksum = "9e8f13f659c5f73173a40e101bc046c92687c7d5a659ca213a28c3d2cd7c3577"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -232,9 +232,9 @@ dependencies = [
 
 [[package]]
 name = "cw-storage-plus"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eb8e7cab1cecec97fdc913fc8a24b090f4ece590a38e0b8a8d3ae4b008e8fdd"
+checksum = "2c997305bf082abf2b393ed4a9ea174e2782af532b5df2867a236c1387b1c111"
 dependencies = [
  "cosmwasm-std",
  "schemars",
@@ -243,9 +243,9 @@ dependencies = [
 
 [[package]]
 name = "cw0"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04f822a0780c6440604d66b416a42d726f9180ef9717e302a177b65d389d272d"
+checksum = "30989867dcee9fd4c28e2b7f6d746e6edacfe68d9114667bdbfaa3a6b9745f30"
 dependencies = [
  "cosmwasm-std",
  "schemars",
@@ -255,9 +255,9 @@ dependencies = [
 
 [[package]]
 name = "cw2"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef3cf7bd05f56a9b4281c764f8d6347fe9f60b017ef3c7a3900d552684a87d89"
+checksum = "c23859179203586d9f833322f47bca172fb5604afec3fb107da88d091efc1150"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
@@ -267,9 +267,9 @@ dependencies = [
 
 [[package]]
 name = "cw20"
-version = "0.8.0-rc1"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9de0f4164b3c57ab5b80e2bd9f0b5f6a355bcf0df1d727e8f14ea3d6d12e2ea2"
+checksum = "20d574c8b40495c91056f29f506d6bac48764faa9306482be69b119ac85cd3f9"
 dependencies = [
  "cosmwasm-std",
  "cw0",
@@ -279,9 +279,9 @@ dependencies = [
 
 [[package]]
 name = "cw20-base"
-version = "0.8.0-rc1"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4be3479f5a9fa125ab035fba216abf02908851557a9f838b0970ed1e791dcba"
+checksum = "0d0907bfe419af9f1e17a0b922ea42758ebfe7d92124603ca975c00c13721983"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
@@ -295,9 +295,9 @@ dependencies = [
 
 [[package]]
 name = "cw4"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f901a8a166032acfa68bb8e5f66f4d1d16fa73733ffa694bc76628532c63a6b"
+checksum = "8d74f60144a99edf1e589948801f5acdc2cd7a69316269a52e9e94ae2995219f"
 dependencies = [
  "cosmwasm-std",
  "schemars",
@@ -306,9 +306,9 @@ dependencies = [
 
 [[package]]
 name = "cw4-group"
-version = "0.8.0-rc2"
+version = "0.8.0-rc3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14a168215a1104ea977cc156b8c8e6763d5fd7167aa981de6e34990dfb09b0e7"
+checksum = "aeb6c60cf3cb730804f080ba0f612bdf85ab00644c4cbe474619dc712cc2bd1e"
 dependencies = [
  "cosmwasm-std",
  "cw-controllers",

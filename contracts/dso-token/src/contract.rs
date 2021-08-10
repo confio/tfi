@@ -30,6 +30,7 @@ pub fn instantiate(
         decimals: msg.decimals,
         initial_balances: msg.initial_balances,
         mint: msg.mint,
+        marketing: None,
     };
     cw20_base::contract::instantiate(deps.branch(), env, info, cw20_msg)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -142,6 +143,29 @@ pub fn execute(
             verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner, &contract])?;
             cw20_base::allowances::execute_send_from(deps, env, info, owner, contract, amount, msg)
         }
+        ExecuteMsg::UpdateMarketing {
+            project,
+            description,
+            marketing,
+        } => {
+            if let Some(marketing) = &marketing {
+                verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&marketing])?;
+            } else {
+                verify_sender_on_whitelist(&deps, &info.sender)?;
+            }
+
+            cw20_base::contract::execute_update_marketing(
+                deps,
+                env,
+                info,
+                project,
+                description,
+                marketing,
+            )
+        }
+        ExecuteMsg::UploadLogo(logo) => {
+            cw20_base::contract::execute_upload_logo(deps, env, info, logo)
+        }
     };
     Ok(res?)
 }
@@ -193,9 +217,9 @@ mod tests {
 
     fn mock_app() -> App {
         let env = mock_env();
-        let api = Box::new(MockApi::default());
+        let api = MockApi::default();
         let bank = BankKeeper::new();
-        let storage = Box::new(MockStorage::new());
+        let storage = MockStorage::new();
 
         App::new(api, env.block, bank, storage)
     }
@@ -266,7 +290,7 @@ mod tests {
                 ],
             };
             let group_addr = router
-                .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST")
+                .instantiate_contract(group_id, owner.clone(), &msg, &[], "WHITELIST", None)
                 .unwrap();
             router.update_block(next_block);
 
@@ -280,7 +304,7 @@ mod tests {
                 whitelist_group: group_addr.to_string(),
             };
             let cw20_addr = router
-                .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH")
+                .instantiate_contract(cw20_id, owner, &instantiate_msg, &[], "CASH", None)
                 .unwrap();
             router.update_block(next_block);
 
