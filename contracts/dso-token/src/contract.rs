@@ -32,7 +32,7 @@ pub fn instantiate(
         decimals: msg.decimals,
         initial_balances: msg.initial_balances,
         mint: msg.mint,
-        marketing: msg.marketing.map(Into::into),
+        marketing: msg.marketing,
     };
     cw20_base::contract::instantiate(deps.branch(), env, info, cw20_msg)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -203,7 +203,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg(test)]
 mod tests {
-    use crate::msg::InstantiateMarketingInfo;
+    use cw20_base::msg::InstantiateMarketingInfo;
 
     use super::*;
 
