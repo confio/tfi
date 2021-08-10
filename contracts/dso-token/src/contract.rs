@@ -149,19 +149,15 @@ pub fn execute(
             project,
             description,
             marketing,
-        } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
-            cw20_base::contract::execute_update_marketing(
-                deps,
-                env,
-                info,
-                project,
-                description,
-                marketing,
-            )
-        }
+        } => cw20_base::contract::execute_update_marketing(
+            deps,
+            env,
+            info,
+            project,
+            description,
+            marketing,
+        ),
         ExecuteMsg::UploadLogo(logo) => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
             cw20_base::contract::execute_upload_logo(deps, env, info, logo)
         }
     };
@@ -488,7 +484,7 @@ mod tests {
             }
         );
 
-        let err = router
+        router
             .execute_contract(
                 Addr::unchecked(NON_MEMBER),
                 cw20_addr.clone(),
@@ -501,8 +497,6 @@ mod tests {
             )
             .unwrap_err();
 
-        assert_eq!(err, "Unauthorized".to_owned());
-
         let marketing: cw20::MarketingInfoResponse = router
             .wrap()
             .query_wasm_smart(&cw20_addr, &QueryMsg::MarketingInfo {})
@@ -512,7 +506,7 @@ mod tests {
             marketing,
             cw20::MarketingInfoResponse {
                 project: Some("Project".to_owned()),
-                description: None,
+                description: Some("Description".to_owned()),
                 marketing: Some(Addr::unchecked(NON_MEMBER)),
                 logo: None,
             }
@@ -558,7 +552,7 @@ mod tests {
                 project: None,
                 description: None,
                 marketing: Some(Addr::unchecked(MEMBER1)),
-                logo: Some(cw20::LogoInfo::Url(logo_url.clone())),
+                logo: Some(cw20::LogoInfo::Url(logo_url)),
             }
         );
 
@@ -575,16 +569,16 @@ mod tests {
             )
             .unwrap();
 
-        let err = router
+        let logo_url = "https://logo.url/updated_logo.svg".to_owned();
+
+        router
             .execute_contract(
                 Addr::unchecked(NON_MEMBER),
                 cw20_addr.clone(),
-                &ExecuteMsg::UploadLogo(cw20::Logo::Url("garbage".to_owned())),
+                &ExecuteMsg::UploadLogo(cw20::Logo::Url(logo_url.clone())),
                 &[],
             )
             .unwrap_err();
-
-        assert_eq!(err, "Unauthorized".to_owned());
 
         let marketing: cw20::MarketingInfoResponse = router
             .wrap()

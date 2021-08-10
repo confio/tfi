@@ -2,6 +2,8 @@ use cw20::{Cw20Coin, Logo, MinterResponse};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+// TODO: Get rid of `InstantiateMarketingInfo` and reuse `cw20_base::msg::InstantiateMarketingInfo`
+// when it gains all required traits
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct InstantiateMarketingInfo {
     pub project: Option<String>,
