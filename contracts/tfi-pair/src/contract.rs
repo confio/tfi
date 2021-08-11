@@ -12,7 +12,6 @@ use cosmwasm_std::{
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use integer_sqrt::IntegerSquareRoot;
-use std::str::FromStr;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::pair::{
     Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, PoolResponse, QueryMsg,
@@ -21,9 +20,6 @@ use tfi::pair::{
 use tfi::querier::query_supply;
 use tfi::token::InstantiateMsg as TokenInstantiateMsg;
 
-/// Commission rate == 0.3%
-const COMMISSION_RATE: &str = "0.003";
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -31,12 +27,13 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
-    let pair_info: &PairInfo = &PairInfo {
-        contract_addr: env.contract.address.clone(),
+    let pair_info: &PairInfo = &PairInfo::new(
+        msg.asset_infos,
+        env.contract.address.clone(),
         // ugly placeholder, but we set this in the callback
-        liquidity_token: Addr::unchecked(""),
-        asset_infos: msg.asset_infos,
-    };
+        Addr::unchecked(""),
+    )
+    .with_commission(msg.commission);
 
     PAIR_INFO.save(deps.storage, &pair_info)?;
 
@@ -388,8 +385,12 @@ pub fn swap(
     }
 
     let offer_amount = offer_asset.amount;
-    let (return_amount, spread_amount, commission_amount) =
-        compute_swap(offer_pool.amount, ask_pool.amount, offer_amount)?;
+    let (return_amount, spread_amount, commission_amount) = compute_swap(
+        offer_pool.amount,
+        ask_pool.amount,
+        offer_amount,
+        pair_info.commission,
+    )?;
 
     // check max spread limit if exist
     assert_max_spread(
@@ -474,8 +475,12 @@ pub fn query_simulation(
         return Err(ContractError::AssetMismatch(offer_asset.info.to_string()));
     }
 
-    let (return_amount, spread_amount, commission_amount) =
-        compute_swap(offer_pool.amount, ask_pool.amount, offer_asset.amount)?;
+    let (return_amount, spread_amount, commission_amount) = compute_swap(
+        offer_pool.amount,
+        ask_pool.amount,
+        offer_asset.amount,
+        pair_info.commission,
+    )?;
 
     Ok(SimulationResponse {
         return_amount,
@@ -505,8 +510,12 @@ pub fn query_reverse_simulation(
         return Err(ContractError::AssetMismatch(ask_asset.info.to_string()));
     }
 
-    let (offer_amount, spread_amount, commission_amount) =
-        compute_offer_amount(offer_pool.amount, ask_pool.amount, ask_asset.amount)?;
+    let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+        offer_pool.amount,
+        ask_pool.amount,
+        ask_asset.amount,
+        pair_info.commission,
+    )?;
 
     Ok(ReverseSimulationResponse {
         offer_amount,
@@ -526,6 +535,7 @@ fn compute_swap(
     offer_pool: Uint128,
     ask_pool: Uint128,
     offer_amount: Uint128,
+    commission: Decimal,
 ) -> StdResult<(Uint128, Uint128, Uint128)> {
     // offer => ask
     // ask_amount = (ask_pool - cp / (offer_pool + offer_amount)) * (1 - commission_rate)
@@ -543,7 +553,7 @@ fn compute_swap(
     let spread_amount: Uint128 = (offer_amount * Decimal::from_ratio(ask_pool, offer_pool))
         .checked_sub(return_amount)
         .unwrap_or_else(|_| Uint128::zero());
-    let commission_amount: Uint128 = return_amount * Decimal::from_str(&COMMISSION_RATE).unwrap();
+    let commission_amount: Uint128 = return_amount * commission;
 
     // commission will be absorbed to pool
     let return_amount: Uint128 = return_amount.checked_sub(commission_amount)?;
@@ -555,12 +565,12 @@ fn compute_offer_amount(
     offer_pool: Uint128,
     ask_pool: Uint128,
     ask_amount: Uint128,
+    commission: Decimal,
 ) -> StdResult<(Uint128, Uint128, Uint128)> {
     // ask => offer
     // offer_amount = cp / (ask_pool - ask_amount / (1 - commission_rate)) - offer_pool
     let cp = Uint128::new(offer_pool.u128() * ask_pool.u128());
-    let one_minus_commission =
-        decimal_subtraction(Decimal::one(), Decimal::from_str(&COMMISSION_RATE).unwrap())?;
+    let one_minus_commission = decimal_subtraction(Decimal::one(), commission)?;
 
     let offer_amount: Uint128 = cp
         .multiply_ratio(
@@ -573,8 +583,7 @@ fn compute_offer_amount(
     let spread_amount = (offer_amount * Decimal::from_ratio(ask_pool, offer_pool))
         .checked_sub(before_commission_deduction)
         .unwrap_or_else(|_| Uint128::zero());
-    let commission_amount =
-        before_commission_deduction * Decimal::from_str(&COMMISSION_RATE).unwrap();
+    let commission_amount = before_commission_deduction * commission;
     Ok((offer_amount, spread_amount, commission_amount))
 }
 

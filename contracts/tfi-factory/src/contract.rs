@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
-    SubMsg, WasmMsg,
+    to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    StdResult, SubMsg, WasmMsg,
 };
 
 use crate::querier::query_liquidity_token;
@@ -100,6 +100,8 @@ pub fn execute_create_pair(
         &TmpPairInfo {
             pair_key,
             asset_infos: asset_infos.clone(),
+            /// TODO: Configure commission in #35
+            commission: Decimal::permille(3),
         },
     )?;
 
@@ -109,10 +111,7 @@ pub fn execute_create_pair(
         funds: vec![],
         admin: None,
         label: pair_name.clone(),
-        msg: to_binary(&PairInstantiateMsg {
-            asset_infos,
-            token_code_id: config.token_code_id,
-        })?,
+        msg: to_binary(&PairInstantiateMsg::new(asset_infos, config.token_code_id))?,
     };
     let msg = SubMsg::reply_on_success(msg, 1);
     let res = Response::new()
@@ -138,11 +137,12 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     PAIRS.save(
         deps.storage,
         &tmp_pair_info.pair_key,
-        &PairInfo {
-            liquidity_token: liquidity_token.clone(),
-            contract_addr: pair_contract.clone(),
-            asset_infos: tmp_pair_info.asset_infos,
-        },
+        &PairInfo::new(
+            tmp_pair_info.asset_infos,
+            liquidity_token.clone(),
+            pair_contract.clone(),
+        )
+        .with_commission(tmp_pair_info.commission),
     )?;
 
     Ok(Response::new()

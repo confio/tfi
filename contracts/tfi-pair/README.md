@@ -14,8 +14,8 @@ It creates liquidity token contract as init response, and execute init hook to r
     pub asset_infos: [AssetInfo; 2],
     /// Token code ID for liqudity token creation
     pub token_code_id: u64,
-    /// Hook for post initalization
-    pub init_hook: Option<InitHook>,
+    /// Commission to be applied on swaps, 0.3% by default
+    pub commission: Decimal,
 }
 ```
 

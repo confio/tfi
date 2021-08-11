@@ -1,17 +1,36 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::asset::{Asset, AssetInfo};
+use crate::asset::{default_commission, Asset, AssetInfo};
 
 use cosmwasm_std::{Decimal, Uint128};
 use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[non_exhaustive]
 pub struct InstantiateMsg {
     /// Asset infos
     pub asset_infos: [AssetInfo; 2],
     /// Token contract code id for initialization
     pub token_code_id: u64,
+    /// Commission to be applied on swaps, 0.3% by default
+    #[serde(default = "default_commission")]
+    pub commission: Decimal,
+}
+
+impl InstantiateMsg {
+    pub fn new(asset_infos: [AssetInfo; 2], token_code_id: u64) -> Self {
+        Self {
+            asset_infos,
+            token_code_id,
+            commission: default_commission(),
+        }
+    }
+
+    pub fn with_commission(mut self, commission: Decimal) -> Self {
+        self.commission = commission;
+        self
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

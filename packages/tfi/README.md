@@ -30,11 +30,11 @@ pub struct Asset {
 ### PairInfo
 
 It is used to represent response data of [Pair-Info-Querier](#Pair-Info-Querier)
-
 ```rust
 pub struct PairInfo {
     pub contract_addr: HumanAddr,
     pub asset_infos: [AssetInfo; 2],
+    pub commission: Decimal,
 }
 ```
 ## Queriers

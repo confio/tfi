@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Order, StdResult, Storage};
+use cosmwasm_std::{Addr, Decimal, Order, StdResult, Storage};
 use cw_storage_plus::{Bound, Item, Map};
 use tfi::asset::{AssetInfo, PairInfo};
 
@@ -18,6 +18,7 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub struct TmpPairInfo {
     pub pair_key: Vec<u8>,
     pub asset_infos: [AssetInfo; 2],
+    pub commission: Decimal,
 }
 
 pub const TMP_PAIR_INFO: Item<TmpPairInfo> = Item::new("tmp_pair_info");

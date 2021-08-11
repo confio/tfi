@@ -23,13 +23,13 @@ use tfi_mocks::mock_dependencies;
 fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     // we can just call .unwrap() to assert this was a success
     let env = mock_env();
@@ -88,6 +88,7 @@ fn proper_initialization() {
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ]
     );
+    assert_eq!(pair_info.commission, Decimal::permille(3));
 }
 
 #[test]
@@ -105,13 +106,13 @@ fn provide_liquidity() {
         (&"asset0000".to_string(), &[]),
     ]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
@@ -466,13 +467,13 @@ fn withdraw_liquidity() {
         ),
     ]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
@@ -579,13 +580,13 @@ fn try_native_to_token() {
         ),
     ]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
@@ -741,13 +742,13 @@ fn try_token_to_native() {
         ),
     ]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
@@ -970,13 +971,13 @@ fn test_query_pool() {
         ),
     ]);
 
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("uusd".to_string()),
             AssetInfo::Token(Addr::unchecked("asset0000")),
         ],
-        token_code_id: 10u64,
-    };
+        10u64,
+    );
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);

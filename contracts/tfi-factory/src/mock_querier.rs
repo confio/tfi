@@ -81,14 +81,17 @@ impl WasmMockQuerier {
                         }
                     };
 
-                    SystemResult::Ok(ContractResult::from(to_binary(&PairInfo {
-                        contract_addr: pair_info.contract_addr.clone(),
-                        liquidity_token: pair_info.liquidity_token,
-                        asset_infos: [
-                            AssetInfo::Native("uusd".to_string()),
-                            AssetInfo::Native("uusd".to_string()),
-                        ],
-                    })))
+                    SystemResult::Ok(ContractResult::from(to_binary(
+                        &PairInfo::new(
+                            [
+                                AssetInfo::Native("uusd".to_string()),
+                                AssetInfo::Native("uusd".to_string()),
+                            ],
+                            pair_info.contract_addr.clone(),
+                            pair_info.liquidity_token,
+                        )
+                        .with_commission(pair_info.commission),
+                    )))
                 } else {
                     panic!("DO NOT ENTER HERE")
                 }

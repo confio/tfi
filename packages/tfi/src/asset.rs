@@ -4,8 +4,8 @@ use std::fmt;
 
 use crate::querier::{query_balance, query_token_balance};
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, CosmosMsg, MessageInfo, QuerierWrapper, StdError, StdResult,
-    Uint128, WasmMsg,
+    to_binary, Addr, BankMsg, Coin, CosmosMsg, Decimal, MessageInfo, QuerierWrapper, StdError,
+    StdResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 
@@ -144,13 +144,33 @@ impl AssetInfo {
 
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[non_exhaustive]
 pub struct PairInfo {
     pub asset_infos: [AssetInfo; 2],
     pub contract_addr: Addr,
     pub liquidity_token: Addr,
+    #[serde(
+        default = "default_commission",
+        skip_serializing_if = "PairInfo::skip_commission"
+    )]
+    pub commission: Decimal,
 }
 
 impl PairInfo {
+    pub fn new(asset_infos: [AssetInfo; 2], contract_addr: Addr, liquidity_token: Addr) -> Self {
+        Self {
+            asset_infos,
+            contract_addr,
+            liquidity_token,
+            commission: default_commission(),
+        }
+    }
+
+    pub fn with_commission(mut self, commission: Decimal) -> Self {
+        self.commission = commission;
+        self
+    }
+
     pub fn query_pools(
         &self,
         querier: &QuerierWrapper,
@@ -169,4 +189,12 @@ impl PairInfo {
             },
         ])
     }
+
+    fn skip_commission(commission: &Decimal) -> bool {
+        *commission == default_commission()
+    }
+}
+
+pub(crate) fn default_commission() -> Decimal {
+    Decimal::permille(3)
 }
