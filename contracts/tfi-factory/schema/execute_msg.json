@@ -12,6 +12,16 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "default_commission": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Decimal"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "owner": {
               "type": [
                 "string",

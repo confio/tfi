@@ -47,6 +47,7 @@ fn update_config() {
         owner: Some("addr0001".to_string()),
         pair_code_id: None,
         token_code_id: None,
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
@@ -58,14 +59,16 @@ fn update_config() {
     assert_eq!(123u64, config_res.token_code_id);
     assert_eq!(321u64, config_res.pair_code_id);
     assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(3), config_res.default_commission);
 
-    // update left items
+    // update ids
     let env = mock_env();
     let info = mock_info("addr0001", &[]);
     let msg = ExecuteMsg::UpdateConfig {
         owner: None,
         pair_code_id: Some(100u64),
         token_code_id: Some(200u64),
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
@@ -77,6 +80,28 @@ fn update_config() {
     assert_eq!(200u64, config_res.token_code_id);
     assert_eq!(100u64, config_res.pair_code_id);
     assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(3), config_res.default_commission);
+
+    // update default commission
+    let env = mock_env();
+    let info = mock_info("addr0001", &[]);
+    let msg = ExecuteMsg::UpdateConfig {
+        owner: None,
+        pair_code_id: None,
+        token_code_id: None,
+        default_commission: Some(Decimal::permille(5)),
+    };
+
+    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    assert_eq!(0, res.messages.len());
+
+    // it worked, let's query the state
+    let query_res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+    let config_res: ConfigResponse = from_binary(&query_res).unwrap();
+    assert_eq!(200u64, config_res.token_code_id);
+    assert_eq!(100u64, config_res.pair_code_id);
+    assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(5), config_res.default_commission);
 
     // Unauthorized err
     let env = mock_env();
@@ -85,6 +110,7 @@ fn update_config() {
         owner: None,
         pair_code_id: None,
         token_code_id: None,
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), env, info, msg);

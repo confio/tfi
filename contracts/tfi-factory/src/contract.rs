@@ -42,7 +42,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             owner,
             token_code_id,
             pair_code_id,
-        } => execute_update_config(deps, env, info, owner, token_code_id, pair_code_id),
+            default_commission,
+        } => execute_update_config(
+            deps,
+            env,
+            info,
+            owner,
+            token_code_id,
+            pair_code_id,
+            default_commission,
+        ),
         ExecuteMsg::CreatePair {
             asset_infos,
             commission,
@@ -58,6 +67,7 @@ pub fn execute_update_config(
     owner: Option<String>,
     token_code_id: Option<u64>,
     pair_code_id: Option<u64>,
+    default_commission: Option<Decimal>,
 ) -> StdResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -78,6 +88,10 @@ pub fn execute_update_config(
 
     if let Some(pair_code_id) = pair_code_id {
         config.pair_code_id = pair_code_id;
+    }
+
+    if let Some(commission) = default_commission {
+        config.default_commission = commission;
     }
 
     CONFIG.save(deps.storage, &config)?;

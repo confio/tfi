@@ -38,6 +38,7 @@ pub enum ExecuteMsg {
         owner: Option<String>,
         token_code_id: Option<u64>,
         pair_code_id: Option<u64>,
+        default_commission: Option<Decimal>,
     },
     /// CreatePair instantiates pair contract
     CreatePair {
@@ -56,6 +57,7 @@ pub struct ExecuteUpdateConfig {
     pub owner: Option<String>,
     pub token_code_id: Option<u64>,
     pub pair_code_id: Option<u64>,
+    pub default_commission: Option<Decimal>,
 }
 
 impl ExecuteUpdateConfig {
@@ -77,6 +79,11 @@ impl ExecuteUpdateConfig {
         self.pair_code_id = Some(id);
         self
     }
+
+    pub fn with_default_commission(mut self, commission: Decimal) -> Self {
+        self.default_commission = Some(commission);
+        self
+    }
 }
 
 impl From<ExecuteUpdateConfig> for ExecuteMsg {
@@ -85,6 +92,7 @@ impl From<ExecuteUpdateConfig> for ExecuteMsg {
             owner: src.owner,
             token_code_id: src.token_code_id,
             pair_code_id: src.pair_code_id,
+            default_commission: src.default_commission,
         }
     }
 }
