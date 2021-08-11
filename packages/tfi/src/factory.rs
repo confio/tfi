@@ -5,10 +5,29 @@ use serde::{Deserialize, Serialize};
 use crate::asset::{default_commission, AssetInfo, PairInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[non_exhaustive]
 pub struct InstantiateMsg {
     /// Pair contract code ID, which is used to
     pub pair_code_id: u64,
     pub token_code_id: u64,
+    /// Default commission to be set on newly created pair, 0.003 by default
+    #[serde(default = "default_commission")]
+    pub default_commission: Decimal,
+}
+
+impl InstantiateMsg {
+    pub fn new(pair_code_id: u64, token_code_id: u64) -> Self {
+        Self {
+            pair_code_id,
+            token_code_id,
+            default_commission: default_commission(),
+        }
+    }
+
+    pub fn with_default_commission(mut self, commission: Decimal) -> Self {
+        self.default_commission = commission;
+        self
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -24,9 +43,9 @@ pub enum ExecuteMsg {
     CreatePair {
         /// Asset infos
         asset_infos: [AssetInfo; 2],
-        /// Commission on creted pair
-        #[serde(default = "default_commission")]
-        commission: Decimal,
+        /// Commission on creted pair. If none, default commission from factory configuration would
+        /// be used.
+        commission: Option<Decimal>,
     },
 }
 
@@ -77,19 +96,19 @@ pub struct ExecuteCreatePair {
     /// Asset infos
     asset_infos: [AssetInfo; 2],
     /// Commision on created pair
-    commission: Decimal,
+    commission: Option<Decimal>,
 }
 
 impl ExecuteCreatePair {
     pub fn new(asset_infos: [AssetInfo; 2]) -> Self {
         Self {
             asset_infos,
-            commission: default_commission(),
+            commission: None,
         }
     }
 
     pub fn with_commission(mut self, commission: Decimal) -> Self {
-        self.commission = commission;
+        self.commission = Some(commission);
         self
     }
 }
@@ -122,6 +141,7 @@ pub struct ConfigResponse {
     pub owner: String,
     pub pair_code_id: u64,
     pub token_code_id: u64,
+    pub default_commission: Decimal,
 }
 
 /// We currently take no arguments for migrations

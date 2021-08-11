@@ -27,6 +27,7 @@ pub fn instantiate(
         owner: info.sender,
         token_code_id: msg.token_code_id,
         pair_code_id: msg.pair_code_id,
+        default_commission: msg.default_commission,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -90,7 +91,7 @@ pub fn execute_create_pair(
     _env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
-    commission: Decimal,
+    commission: Option<Decimal>,
 ) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -98,6 +99,8 @@ pub fn execute_create_pair(
     if let Ok(Some(_)) = PAIRS.may_load(deps.storage, &pair_key) {
         return Err(StdError::generic_err("Pair already exists"));
     }
+
+    let commission = commission.unwrap_or(config.default_commission);
 
     TMP_PAIR_INFO.save(
         deps.storage,
@@ -114,7 +117,9 @@ pub fn execute_create_pair(
         funds: vec![],
         admin: None,
         label: pair_name.clone(),
-        msg: to_binary(&PairInstantiateMsg::new(asset_infos, config.token_code_id))?,
+        msg: to_binary(
+            &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
+        )?,
     };
     let msg = SubMsg::reply_on_success(msg, 1);
     let res = Response::new()
@@ -170,6 +175,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         owner: state.owner.into(),
         token_code_id: state.token_code_id,
         pair_code_id: state.pair_code_id,
+        default_commission: state.default_commission,
     };
 
     Ok(resp)

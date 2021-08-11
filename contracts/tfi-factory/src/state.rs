@@ -10,6 +10,7 @@ pub struct Config {
     pub owner: Addr,
     pub pair_code_id: u64,
     pub token_code_id: u64,
+    pub default_commission: Decimal,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
