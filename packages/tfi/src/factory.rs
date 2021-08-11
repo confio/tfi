@@ -1,7 +1,8 @@
+use cosmwasm_std::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::asset::{AssetInfo, PairInfo};
+use crate::asset::{default_commission, AssetInfo, PairInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -23,7 +24,83 @@ pub enum ExecuteMsg {
     CreatePair {
         /// Asset infos
         asset_infos: [AssetInfo; 2],
+        /// Commission on creted pair
+        #[serde(default = "default_commission")]
+        commission: Decimal,
     },
+}
+
+/// Utility for creating `ExecuteMsg::UpdateConfig` variant
+#[derive(Clone, Debug, PartialEq, Default)]
+#[non_exhaustive]
+pub struct ExecuteUpdateConfig {
+    pub owner: Option<String>,
+    pub token_code_id: Option<u64>,
+    pub pair_code_id: Option<u64>,
+}
+
+impl ExecuteUpdateConfig {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_owner(mut self, owner: impl Into<String>) -> Self {
+        self.owner = Some(owner.into());
+        self
+    }
+
+    pub fn with_token_code_id(mut self, id: u64) -> Self {
+        self.token_code_id = Some(id);
+        self
+    }
+
+    pub fn with_pair_code_id(mut self, id: u64) -> Self {
+        self.pair_code_id = Some(id);
+        self
+    }
+}
+
+impl From<ExecuteUpdateConfig> for ExecuteMsg {
+    fn from(src: ExecuteUpdateConfig) -> Self {
+        Self::UpdateConfig {
+            owner: src.owner,
+            token_code_id: src.token_code_id,
+            pair_code_id: src.pair_code_id,
+        }
+    }
+}
+
+/// Utility for creating `ExecuteMsg::UpdatePair` variant
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ExecuteCreatePair {
+    /// Asset infos
+    asset_infos: [AssetInfo; 2],
+    /// Commision on created pair
+    commission: Decimal,
+}
+
+impl ExecuteCreatePair {
+    pub fn new(asset_infos: [AssetInfo; 2]) -> Self {
+        Self {
+            asset_infos,
+            commission: default_commission(),
+        }
+    }
+
+    pub fn with_commission(mut self, commission: Decimal) -> Self {
+        self.commission = commission;
+        self
+    }
+}
+
+impl From<ExecuteCreatePair> for ExecuteMsg {
+    fn from(src: ExecuteCreatePair) -> Self {
+        Self::CreatePair {
+            asset_infos: src.asset_infos,
+            commission: src.commission,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -42,7 +42,10 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             token_code_id,
             pair_code_id,
         } => execute_update_config(deps, env, info, owner, token_code_id, pair_code_id),
-        ExecuteMsg::CreatePair { asset_infos } => execute_create_pair(deps, env, info, asset_infos),
+        ExecuteMsg::CreatePair {
+            asset_infos,
+            commission,
+        } => execute_create_pair(deps, env, info, asset_infos, commission),
     }
 }
 
@@ -87,6 +90,7 @@ pub fn execute_create_pair(
     _env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
+    commission: Decimal,
 ) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -100,8 +104,7 @@ pub fn execute_create_pair(
         &TmpPairInfo {
             pair_key,
             asset_infos: asset_infos.clone(),
-            /// TODO: Configure commission in #35
-            commission: Decimal::permille(3),
+            commission,
         },
     )?;
 

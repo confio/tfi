@@ -9,7 +9,7 @@ use cosmwasm_std::{
     SubMsgExecutionResponse, WasmMsg,
 };
 use tfi::asset::{AssetInfo, PairInfo};
-use tfi::factory::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use tfi::factory::{ConfigResponse, ExecuteCreatePair, ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::InstantiateMsg as PairInstantiateMsg;
 
 #[test]
@@ -120,13 +120,15 @@ fn create_pair() {
         AssetInfo::Token(Addr::unchecked("asset0001")),
     ];
 
-    let msg = ExecuteMsg::CreatePair {
-        asset_infos: asset_infos.clone(),
-    };
-
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
-    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let res = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteCreatePair::new(asset_infos.clone()).into(),
+    )
+    .unwrap();
     assert_eq!(
         res.attributes,
         vec![
