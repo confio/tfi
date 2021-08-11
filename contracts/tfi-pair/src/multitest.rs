@@ -7,7 +7,10 @@ use derivative::Derivative;
 
 use crate::error::ContractError;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
-use tfi::pair::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulationResponse};
+use tfi::pair::{
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, ReverseSimulationResponse,
+    SimulationResponse,
+};
 
 fn mock_app() -> App {
     let env = mock_env();
@@ -70,6 +73,16 @@ struct Suite {
 }
 
 impl Suite {
+    /// Returns btc asset info
+    fn btc(&self) -> AssetInfo {
+        AssetInfo::Native("btc".to_owned())
+    }
+
+    /// Returns cash asset info
+    fn cash(&self) -> AssetInfo {
+        AssetInfo::Token(self.cash.clone())
+    }
+
     /// Helper executing providing liquidity for pair
     ///
     /// First if any cash is provided, increases allowance for it so it can actually be send. Then
@@ -183,6 +196,46 @@ impl Suite {
         Ok(self)
     }
 
+    /// Helper for swap simulation.
+    ///
+    /// Queries with `QueryMsg::Simulation` and retuns `SimulationResponse`
+    fn simulate_swap(&mut self, offer: u128, asset: AssetInfo) -> Result<SimulationResponse> {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.pair.clone(),
+                &QueryMsg::Simulation {
+                    offer_asset: Asset {
+                        info: asset,
+                        amount: Uint128::new(offer),
+                    },
+                },
+            )
+            .map_err(|err| anyhow!(err))
+    }
+
+    /// Helper for reverse swap simulation
+    ///
+    /// Queries with `QueryMsg::ReverseSimulation` and returns `ReverseSimulationResponse`
+    fn simulate_reverse_swap(
+        &mut self,
+        ask: u128,
+        asset: AssetInfo,
+    ) -> Result<ReverseSimulationResponse> {
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.pair.clone(),
+                &QueryMsg::ReverseSimulation {
+                    ask_asset: Asset {
+                        info: asset,
+                        amount: Uint128::new(ask),
+                    },
+                },
+            )
+            .map_err(|err| anyhow!(err))
+    }
+
     /// Helper for withdrawing liquidity from pair
     ///
     /// Executes `Send` on lt contract with `Cw20HookMsg::WithdrawLiquidity` as send hook message
@@ -284,6 +337,8 @@ struct SuiteConfig {
     traders: Vec<ActorConfig>,
     /// Initial liquidity providers config
     lps: Vec<ActorConfig>,
+    /// Commission to initialize pair with
+    commission: Option<Decimal>,
 }
 
 impl SuiteConfig {
@@ -311,6 +366,11 @@ impl SuiteConfig {
             cash,
         });
 
+        self
+    }
+
+    fn with_commission(mut self, commission: Decimal) -> Self {
+        self.commission = Some(commission);
         self
     }
 
@@ -367,21 +427,22 @@ impl SuiteConfig {
             )
             .map_err(|err| anyhow!(err))?;
 
+        let instantiate_msg = InstantiateMsg::new(
+            [
+                AssetInfo::Native("btc".to_owned()),
+                AssetInfo::Token(cash.clone()),
+            ],
+            cw20_id,
+        );
+
+        let instantiate_msg = if let Some(commission) = self.commission {
+            instantiate_msg.with_commission(commission)
+        } else {
+            instantiate_msg
+        };
+
         let pair = app
-            .instantiate_contract(
-                pair_id,
-                admin.clone(),
-                &InstantiateMsg {
-                    asset_infos: [
-                        AssetInfo::Native("btc".to_owned()),
-                        AssetInfo::Token(cash.clone()),
-                    ],
-                    token_code_id: cw20_id,
-                },
-                &[],
-                "Pair",
-                None,
-            )
+            .instantiate_contract(pair_id, admin.clone(), &instantiate_msg, &[], "Pair", None)
             .map_err(|err| anyhow!(err))?;
 
         let PairInfo {
@@ -433,13 +494,13 @@ fn setup_liquidity_pool() {
 
     // set up pair contract
     let pair_id = app.store_code(contract_pair());
-    let msg = InstantiateMsg {
-        asset_infos: [
+    let msg = InstantiateMsg::new(
+        [
             AssetInfo::Native("btc".into()),
             AssetInfo::Token(cash_addr.clone()),
         ],
-        token_code_id: cw20_id,
-    };
+        cw20_id,
+    );
     let pair_addr = app
         .instantiate_contract(pair_id, owner.clone(), &msg, &[], "Pair", None)
         .unwrap();
@@ -527,7 +588,7 @@ fn setup_liquidity_pool() {
 // * Perform single swap of tokens to native tokens
 // * Verify proper amount of tokens (including 0.3% fee)
 // * Withdraw liquidity, all fees should be also added
-fn single_swap() {
+fn swap() {
     // Initialize suite:
     // liquidity provider (lp): 2000btc + 6000cash
     // trader: 1000btc
@@ -560,9 +621,9 @@ fn single_swap() {
 
     // trader -> pair: 1000btc
     // pair -> trader: 1994cash, explanaction:
-    //   btc to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
-    //   btc to be paid out: 6000 - 2000 = 4000
-    //   btc to be paid out after commission: 2000 - 2000 * 0.03% = 2000 - 2000 * 0.997 = 1994
+    //   cash to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
+    //   cash to be paid out: 6000 - 4000 = 2000
+    //   cash to be paid out after commission: 2000 - 2000 * 0.3% = 2000 - 2000 * 0.003= 1994
     suite
         .assert_balances(&lp, 0, 0, 3464)
         .assert_balances(&trader, 0, 1994, 0)
@@ -575,9 +636,9 @@ fn single_swap() {
 
     // trader -> pair: 1000cash
     // pair -> trader_recv: 599 cash, explanation:
-    //   cash to be left on contract: 3000 * 4006 / (4006 + 1000) = 2400
-    //   cash to be paid out: 3000 - 2400 = 600
-    //   cash to be paid out after commission: 600 - 600 * 0.003 = 599
+    //   btc to be left on contract: 3000 * 4006 / (4006 + 1000) = 2400
+    //   btc to be paid out: 3000 - 2400 = 600
+    //   btc to be paid out after commission: 600 - 600 * 0.003 = 599
     suite
         .assert_balances(&lp, 0, 0, 3464)
         .assert_balances(&trader, 0, 994, 0)
@@ -597,4 +658,250 @@ fn single_swap() {
         .assert_balances(&trader, 0, 994, 0)
         .assert_balances(&trader_recv, 599, 0, 0)
         .assert_balances(&pair, 0, 0, 0);
+}
+
+#[test]
+// Checks if simulation works properly
+// * Provide liquidity for test pair contract
+// * Simulate swap in both ways, ensure result match expectations
+fn simulate() {
+    // Initialize suite:
+    // liquidity provider (lp): 2000btc + 6000cash
+    let mut suite = SuiteConfig::new()
+        .with_liquidity_provider("liquidity-provider", 2000, 6000)
+        .init()
+        .unwrap();
+
+    let lp = suite.lps[0].clone();
+
+    suite.provide_liquidity(&lp, 2000, 6000, None).unwrap();
+    let simulation_resp = suite.simulate_swap(1000, suite.btc()).unwrap();
+
+    // cash to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
+    // cash to be paid out: 6000 - 4000 = 2000
+    // commission: 2000 * 0.003 = 6
+    // cash to be paid out after commission: 2000 - 6 = 1994
+    // spread: 1000 * 6000 / 2000 - 2000 = 3000 - 2000 = 1000
+    assert_eq!(
+        simulation_resp,
+        SimulationResponse {
+            return_amount: Uint128::new(1994),
+            spread_amount: Uint128::new(1000),
+            commission_amount: Uint128::new(6),
+        }
+    );
+
+    let simulation_resp = suite.simulate_swap(14000, suite.cash()).unwrap();
+
+    // btc to be left on contract: 6000 * 2000 / (6000 + 14000) = 600
+    // btc to be paid out: 2000 - 600 = 1400
+    // comission: 1400 * 0.003 = 4
+    // btc to be paid out after commission: 1400 - 4 = 1396
+    // spread: 14000 * 2000 / 6000 - 1400 = 3266
+    assert_eq!(
+        simulation_resp,
+        SimulationResponse {
+            return_amount: Uint128::new(1396),
+            spread_amount: Uint128::new(3266),
+            commission_amount: Uint128::new(4),
+        }
+    );
+}
+
+#[test]
+// Checks if reverse simulation works properly
+// * Provide liquidity for test pair contract
+// * Reverse simulate swap in both ways
+// * Check, that after simulating with given results, ammounts are as expected
+//
+// Reverse simulation results are not validated directly, as due to calculation precision it is
+// poosible, reverse simulation might return range of results.
+fn reverse_simulate() {
+    // Initialize suite:
+    // liquidity provider (lp): 2000btc + 6000cash
+    let mut suite = SuiteConfig::new()
+        .with_liquidity_provider("liquidity-provider", 2000, 6000)
+        .init()
+        .unwrap();
+
+    let lp = suite.lps[0].clone();
+
+    suite.provide_liquidity(&lp, 2000, 6000, None).unwrap();
+    let rev_simulation_resp = suite.simulate_reverse_swap(1000, suite.btc()).unwrap();
+    let simulation_resp = suite
+        .simulate_swap(rev_simulation_resp.offer_amount.into(), suite.cash())
+        .unwrap();
+
+    assert_eq!(simulation_resp.return_amount, Uint128::new(1000));
+    assert_eq!(
+        simulation_resp.spread_amount,
+        rev_simulation_resp.spread_amount
+    );
+    assert_eq!(
+        simulation_resp.commission_amount,
+        rev_simulation_resp.commission_amount
+    );
+
+    let rev_simulation_resp = suite.simulate_reverse_swap(1000, suite.cash()).unwrap();
+    let simulation_resp = suite
+        .simulate_swap(rev_simulation_resp.offer_amount.into(), suite.btc())
+        .unwrap();
+
+    assert_eq!(simulation_resp.return_amount, Uint128::new(1000));
+    assert_eq!(
+        simulation_resp.spread_amount,
+        rev_simulation_resp.spread_amount
+    );
+    assert_eq!(
+        simulation_resp.commission_amount,
+        rev_simulation_resp.commission_amount
+    );
+}
+
+mod custom_commission {
+    use super::*;
+
+    #[test]
+    // Simple swap scenario
+    //
+    // Equivalent of `super::swap`, but with custom commission set. Only commission related checks
+    // are performed.
+    fn swap() {
+        // Initialize suite:
+        // liquidity provider (lp): 2000btc + 6000cash
+        // trader: 1000btc
+        let mut suite = SuiteConfig::new()
+            .with_liquidity_provider("liquidity-provider", 2000, 6000)
+            .with_trader("trader", 1000, 0)
+            .with_commission(Decimal::permille(5))
+            .init()
+            .unwrap();
+
+        let (lp, trader, pair) = (
+            suite.lps[0].clone(),
+            suite.traders[0].clone(),
+            suite.pair.clone(),
+        );
+
+        suite.provide_liquidity(&lp, 2000, 6000, None).unwrap();
+        suite.swap_btc(&trader, 1000, None, None, None).unwrap();
+
+        // trader -> pair: 1000btc
+        // pair -> trader: 1994cash, explanaction:
+        //   cash to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
+        //   cash to be paid out: 6000 - 4000 = 2000
+        //   cash to be paid out after commission: 2000 - 2000 * 0.5% = 2000 - 2000 * 0.005 = 1990
+        suite
+            .assert_balances(&lp, 0, 0, 3464)
+            .assert_balances(&trader, 0, 1990, 0)
+            .assert_balances(&pair, 3000, 4010, 0);
+
+        suite.swap_cash(&trader, 1000, None, None, None).unwrap();
+
+        // trader -> pair: 1000cash
+        // pair -> trader_recv: 599 cash, explanation:
+        //   btc to be left on contract: 3000 * 4010 / (4010 + 1000) = 2401
+        //   btc to be paid out: 3000 - 2401 = 599
+        //   btc to be paid out after commission: 599 - 599 * 0.005 = 597
+        suite
+            .assert_balances(&lp, 0, 0, 3464)
+            .assert_balances(&trader, 597, 990, 0)
+            .assert_balances(&pair, 2403, 5010, 0);
+    }
+
+    #[test]
+    // Checks if simulation works properly
+    //
+    // Equivalent of `super::simulate` with custom commission
+    fn simulate() {
+        // Initialize suite:
+        // liquidity provider (lp): 2000btc + 6000cash
+        let mut suite = SuiteConfig::new()
+            .with_liquidity_provider("liquidity-provider", 2000, 6000)
+            .with_commission(Decimal::permille(5))
+            .init()
+            .unwrap();
+
+        let lp = suite.lps[0].clone();
+
+        suite.provide_liquidity(&lp, 2000, 6000, None).unwrap();
+        let simulation_resp = suite.simulate_swap(1000, suite.btc()).unwrap();
+
+        // cash to be left on contract: 6000 * 2000 / (2000 + 1000) = 4000
+        // cash to be paid out: 6000 - 4000 = 2000
+        // commission: 2000 * 0.005 = 10
+        // cash to be paid out after commission: 2000 - 10 = 1990
+        // spread: 1000 * 6000 / 2000 - 2000 = 3000 - 2000 = 1000
+        assert_eq!(
+            simulation_resp,
+            SimulationResponse {
+                return_amount: Uint128::new(1990),
+                spread_amount: Uint128::new(1000),
+                commission_amount: Uint128::new(10),
+            }
+        );
+
+        let simulation_resp = suite.simulate_swap(14000, suite.cash()).unwrap();
+
+        // btc to be left on contract: 6000 * 2000 / (6000 + 14000) = 600
+        // btc to be paid out: 2000 - 600 = 1400
+        // comission: 1400 * 0.005 = 7
+        // btc to be paid out after commission: 1400 - 7 = 1393
+        // spread: 14000 * 2000 / 6000 - 1400 = 3266
+        assert_eq!(
+            simulation_resp,
+            SimulationResponse {
+                return_amount: Uint128::new(1393),
+                spread_amount: Uint128::new(3266),
+                commission_amount: Uint128::new(7),
+            }
+        );
+    }
+
+    #[test]
+    // Checks if reverse simulation works properly
+    //
+    // Equivalent of `super::reverse_simulate` with custom commission
+    fn reverse_simulate() {
+        // Initialize suite:
+        // liquidity provider (lp): 2000btc + 6000cash
+        let mut suite = SuiteConfig::new()
+            .with_liquidity_provider("liquidity-provider", 2000, 6000)
+            .with_commission(Decimal::permille(5))
+            .init()
+            .unwrap();
+
+        let lp = suite.lps[0].clone();
+
+        suite.provide_liquidity(&lp, 2000, 6000, None).unwrap();
+        let rev_simulation_resp = suite.simulate_reverse_swap(1000, suite.btc()).unwrap();
+        let simulation_resp = suite
+            .simulate_swap(rev_simulation_resp.offer_amount.into(), suite.cash())
+            .unwrap();
+
+        assert_eq!(simulation_resp.return_amount, Uint128::new(1000));
+        assert_eq!(
+            simulation_resp.spread_amount,
+            rev_simulation_resp.spread_amount
+        );
+        assert_eq!(
+            simulation_resp.commission_amount,
+            rev_simulation_resp.commission_amount
+        );
+
+        let rev_simulation_resp = suite.simulate_reverse_swap(1000, suite.cash()).unwrap();
+        let simulation_resp = suite
+            .simulate_swap(rev_simulation_resp.offer_amount.into(), suite.btc())
+            .unwrap();
+
+        assert_eq!(simulation_resp.return_amount, Uint128::new(1000));
+        assert_eq!(
+            simulation_resp.spread_amount,
+            rev_simulation_resp.spread_amount
+        );
+        assert_eq!(
+            simulation_resp.commission_amount,
+            rev_simulation_resp.commission_amount
+        );
+    }
 }

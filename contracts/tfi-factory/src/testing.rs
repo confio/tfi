@@ -5,7 +5,7 @@ use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
 
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, ContractResult, Reply, ReplyOn, StdError, SubMsg,
+    attr, from_binary, to_binary, Addr, ContractResult, Decimal, Reply, ReplyOn, StdError, SubMsg,
     SubMsgExecutionResponse, WasmMsg,
 };
 use tfi::asset::{AssetInfo, PairInfo};
@@ -141,11 +141,7 @@ fn create_pair() {
             gas_limit: None,
             reply_on: ReplyOn::Success,
             msg: WasmMsg::Instantiate {
-                msg: to_binary(&PairInstantiateMsg {
-                    asset_infos: asset_infos.clone(),
-                    token_code_id: 123u64,
-                })
-                .unwrap(),
+                msg: to_binary(&PairInstantiateMsg::new(asset_infos.clone(), 123u64)).unwrap(),
                 code_id: 321u64,
                 funds: vec![],
                 label: "asset0000-asset0001".to_string(),
@@ -160,6 +156,7 @@ fn create_pair() {
         TmpPairInfo {
             asset_infos: asset_infos.clone(),
             pair_key: pair_key(&asset_infos),
+            commission: Decimal::permille(3),
         }
     );
 }
@@ -180,6 +177,7 @@ fn reply_test() {
             &TmpPairInfo {
                 asset_infos: asset_infos.clone(),
                 pair_key,
+                commission: Decimal::permille(3),
             },
         )
         .unwrap();
@@ -195,14 +193,14 @@ fn reply_test() {
     // register tfi pair querier
     deps.querier.with_tfi_pairs(&[(
         &"pair0000".to_string(),
-        &PairInfo {
-            asset_infos: [
+        &PairInfo::new(
+            [
                 AssetInfo::Native("uusd".to_string()),
                 AssetInfo::Native("uusd".to_string()),
             ],
-            contract_addr: Addr::unchecked("pair0000"),
-            liquidity_token: Addr::unchecked("liquidity0000"),
-        },
+            Addr::unchecked("pair0000"),
+            Addr::unchecked("liquidity0000"),
+        ),
     )]);
 
     let _res = reply(deps.as_mut(), mock_env(), reply_msg).unwrap();
@@ -219,10 +217,10 @@ fn reply_test() {
     let pair_res: PairInfo = from_binary(&query_res).unwrap();
     assert_eq!(
         pair_res,
-        PairInfo {
-            liquidity_token: Addr::unchecked("liquidity0000"),
-            contract_addr: Addr::unchecked("pair0000"),
+        PairInfo::new(
             asset_infos,
-        }
+            Addr::unchecked("liquidity0000"),
+            Addr::unchecked("pair0000"),
+        )
     );
 }
