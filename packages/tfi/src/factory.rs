@@ -44,7 +44,7 @@ pub enum ExecuteMsg {
     CreatePair {
         /// Asset infos
         asset_infos: [AssetInfo; 2],
-        /// Commission on creted pair. If none, default commission from factory configuration would
+        /// Commission on craeted pair. If none, default commission from factory configuration would
         /// be used.
         commission: Option<Decimal>,
     },

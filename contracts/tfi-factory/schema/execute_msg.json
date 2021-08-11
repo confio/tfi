@@ -72,7 +72,7 @@
               "minItems": 2
             },
             "commission": {
-              "description": "Commission on creted pair. If none, default commission from factory configuration would be used.",
+              "description": "Commission on craeted pair. If none, default commission from factory configuration would be used.",
               "anyOf": [
                 {
                   "$ref": "#/definitions/Decimal"
