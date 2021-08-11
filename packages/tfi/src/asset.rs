@@ -149,10 +149,7 @@ pub struct PairInfo {
     pub asset_infos: [AssetInfo; 2],
     pub contract_addr: Addr,
     pub liquidity_token: Addr,
-    #[serde(
-        default = "default_commission",
-        skip_serializing_if = "PairInfo::skip_commission"
-    )]
+    #[serde(default = "default_commission")]
     pub commission: Decimal,
 }
 
@@ -188,10 +185,6 @@ impl PairInfo {
                 info: info_1,
             },
         ])
-    }
-
-    fn skip_commission(commission: &Decimal) -> bool {
-        *commission == default_commission()
     }
 }
 

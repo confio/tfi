@@ -27,6 +27,7 @@ pub fn instantiate(
         owner: info.sender,
         token_code_id: msg.token_code_id,
         pair_code_id: msg.pair_code_id,
+        default_commission: msg.default_commission,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -41,8 +42,20 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             owner,
             token_code_id,
             pair_code_id,
-        } => execute_update_config(deps, env, info, owner, token_code_id, pair_code_id),
-        ExecuteMsg::CreatePair { asset_infos } => execute_create_pair(deps, env, info, asset_infos),
+            default_commission,
+        } => execute_update_config(
+            deps,
+            env,
+            info,
+            owner,
+            token_code_id,
+            pair_code_id,
+            default_commission,
+        ),
+        ExecuteMsg::CreatePair {
+            asset_infos,
+            commission,
+        } => execute_create_pair(deps, env, info, asset_infos, commission),
     }
 }
 
@@ -54,6 +67,7 @@ pub fn execute_update_config(
     owner: Option<String>,
     token_code_id: Option<u64>,
     pair_code_id: Option<u64>,
+    default_commission: Option<Decimal>,
 ) -> StdResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -76,6 +90,10 @@ pub fn execute_update_config(
         config.pair_code_id = pair_code_id;
     }
 
+    if let Some(commission) = default_commission {
+        config.default_commission = commission;
+    }
+
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new().add_attribute("action", "update_config"))
@@ -87,6 +105,7 @@ pub fn execute_create_pair(
     _env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
+    commission: Option<Decimal>,
 ) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -95,13 +114,14 @@ pub fn execute_create_pair(
         return Err(StdError::generic_err("Pair already exists"));
     }
 
+    let commission = commission.unwrap_or(config.default_commission);
+
     TMP_PAIR_INFO.save(
         deps.storage,
         &TmpPairInfo {
             pair_key,
             asset_infos: asset_infos.clone(),
-            /// TODO: Configure commission in #35
-            commission: Decimal::permille(3),
+            commission,
         },
     )?;
 
@@ -111,7 +131,9 @@ pub fn execute_create_pair(
         funds: vec![],
         admin: None,
         label: pair_name.clone(),
-        msg: to_binary(&PairInstantiateMsg::new(asset_infos, config.token_code_id))?,
+        msg: to_binary(
+            &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
+        )?,
     };
     let msg = SubMsg::reply_on_success(msg, 1);
     let res = Response::new()
@@ -167,6 +189,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         owner: state.owner.into(),
         token_code_id: state.token_code_id,
         pair_code_id: state.pair_code_id,
+        default_commission: state.default_commission,
     };
 
     Ok(resp)

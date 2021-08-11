@@ -9,17 +9,14 @@ use cosmwasm_std::{
     SubMsgExecutionResponse, WasmMsg,
 };
 use tfi::asset::{AssetInfo, PairInfo};
-use tfi::factory::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use tfi::factory::{ConfigResponse, ExecuteCreatePair, ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::InstantiateMsg as PairInstantiateMsg;
 
 #[test]
 fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = InstantiateMsg {
-        pair_code_id: 321u64,
-        token_code_id: 123u64,
-    };
+    let msg = InstantiateMsg::new(321u64, 123u64);
 
     let info = mock_info("addr0000", &[]);
 
@@ -37,10 +34,7 @@ fn proper_initialization() {
 fn update_config() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = InstantiateMsg {
-        pair_code_id: 321u64,
-        token_code_id: 123u64,
-    };
+    let msg = InstantiateMsg::new(321u64, 123u64);
 
     let info = mock_info("addr0000", &[]);
 
@@ -53,6 +47,7 @@ fn update_config() {
         owner: Some("addr0001".to_string()),
         pair_code_id: None,
         token_code_id: None,
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
@@ -64,14 +59,16 @@ fn update_config() {
     assert_eq!(123u64, config_res.token_code_id);
     assert_eq!(321u64, config_res.pair_code_id);
     assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(3), config_res.default_commission);
 
-    // update left items
+    // update ids
     let env = mock_env();
     let info = mock_info("addr0001", &[]);
     let msg = ExecuteMsg::UpdateConfig {
         owner: None,
         pair_code_id: Some(100u64),
         token_code_id: Some(200u64),
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
@@ -83,6 +80,28 @@ fn update_config() {
     assert_eq!(200u64, config_res.token_code_id);
     assert_eq!(100u64, config_res.pair_code_id);
     assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(3), config_res.default_commission);
+
+    // update default commission
+    let env = mock_env();
+    let info = mock_info("addr0001", &[]);
+    let msg = ExecuteMsg::UpdateConfig {
+        owner: None,
+        pair_code_id: None,
+        token_code_id: None,
+        default_commission: Some(Decimal::permille(5)),
+    };
+
+    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    assert_eq!(0, res.messages.len());
+
+    // it worked, let's query the state
+    let query_res = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+    let config_res: ConfigResponse = from_binary(&query_res).unwrap();
+    assert_eq!(200u64, config_res.token_code_id);
+    assert_eq!(100u64, config_res.pair_code_id);
+    assert_eq!("addr0001".to_string(), config_res.owner);
+    assert_eq!(Decimal::permille(5), config_res.default_commission);
 
     // Unauthorized err
     let env = mock_env();
@@ -91,6 +110,7 @@ fn update_config() {
         owner: None,
         pair_code_id: None,
         token_code_id: None,
+        default_commission: None,
     };
 
     let res = execute(deps.as_mut(), env, info, msg);
@@ -104,10 +124,7 @@ fn update_config() {
 fn create_pair() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = InstantiateMsg {
-        pair_code_id: 321u64,
-        token_code_id: 123u64,
-    };
+    let msg = InstantiateMsg::new(321u64, 123u64);
 
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
@@ -120,13 +137,15 @@ fn create_pair() {
         AssetInfo::Token(Addr::unchecked("asset0001")),
     ];
 
-    let msg = ExecuteMsg::CreatePair {
-        asset_infos: asset_infos.clone(),
-    };
-
     let env = mock_env();
     let info = mock_info("addr0000", &[]);
-    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let res = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteCreatePair::new(asset_infos.clone()).into(),
+    )
+    .unwrap();
     assert_eq!(
         res.attributes,
         vec![
@@ -222,5 +241,135 @@ fn reply_test() {
             Addr::unchecked("liquidity0000"),
             Addr::unchecked("pair0000"),
         )
+    );
+}
+
+#[test]
+fn custom_default_commission() {
+    let mut deps = mock_dependencies(&[]);
+
+    let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(5));
+
+    let env = mock_env();
+    let info = mock_info("addr0000", &[]);
+
+    // we can just call .unwrap() to assert this was a success
+    instantiate(deps.as_mut(), env, info, msg).unwrap();
+
+    let asset_infos = [
+        AssetInfo::Token(Addr::unchecked("asset0000")),
+        AssetInfo::Token(Addr::unchecked("asset0001")),
+    ];
+
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[]),
+        ExecuteCreatePair::new(asset_infos.clone()).into(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "create_pair"),
+            attr("pair", "asset0000-asset0001")
+        ]
+    );
+
+    assert_eq!(
+        res.messages,
+        vec![SubMsg {
+            id: 1,
+            gas_limit: None,
+            reply_on: ReplyOn::Success,
+            msg: WasmMsg::Instantiate {
+                msg: to_binary(
+                    &PairInstantiateMsg::new(asset_infos.clone(), 123u64)
+                        .with_commission(Decimal::permille(5))
+                )
+                .unwrap(),
+                code_id: 321u64,
+                funds: vec![],
+                label: "asset0000-asset0001".to_string(),
+                admin: None,
+            }
+            .into()
+        },]
+    );
+
+    assert_eq!(
+        TMP_PAIR_INFO.load(&deps.storage).unwrap(),
+        TmpPairInfo {
+            asset_infos: asset_infos.clone(),
+            pair_key: pair_key(&asset_infos),
+            commission: Decimal::permille(5),
+        }
+    );
+}
+
+#[test]
+fn custom_pair_commission() {
+    let mut deps = mock_dependencies(&[]);
+
+    let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(5));
+
+    let env = mock_env();
+    let info = mock_info("addr0000", &[]);
+
+    // we can just call .unwrap() to assert this was a success
+    instantiate(deps.as_mut(), env, info, msg).unwrap();
+
+    let asset_infos = [
+        AssetInfo::Token(Addr::unchecked("asset0000")),
+        AssetInfo::Token(Addr::unchecked("asset0001")),
+    ];
+
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[]),
+        ExecuteCreatePair::new(asset_infos.clone())
+            .with_commission(Decimal::permille(5))
+            .into(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        res.attributes,
+        vec![
+            attr("action", "create_pair"),
+            attr("pair", "asset0000-asset0001")
+        ]
+    );
+
+    assert_eq!(
+        res.messages,
+        vec![SubMsg {
+            id: 1,
+            gas_limit: None,
+            reply_on: ReplyOn::Success,
+            msg: WasmMsg::Instantiate {
+                msg: to_binary(
+                    &PairInstantiateMsg::new(asset_infos.clone(), 123u64)
+                        .with_commission(Decimal::permille(5))
+                )
+                .unwrap(),
+                code_id: 321u64,
+                funds: vec![],
+                label: "asset0000-asset0001".to_string(),
+                admin: None,
+            }
+            .into()
+        },]
+    );
+
+    assert_eq!(
+        TMP_PAIR_INFO.load(&deps.storage).unwrap(),
+        TmpPairInfo {
+            asset_infos: asset_infos.clone(),
+            pair_key: pair_key(&asset_infos),
+            commission: Decimal::permille(5),
+        }
     );
 }

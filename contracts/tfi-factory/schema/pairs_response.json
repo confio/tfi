@@ -68,7 +68,12 @@
           "minItems": 2
         },
         "commission": {
-          "$ref": "#/definitions/Decimal"
+          "default": "0.003",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Decimal"
+            }
+          ]
         },
         "contract_addr": {
           "$ref": "#/definitions/Addr"
