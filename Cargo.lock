@@ -824,6 +824,7 @@ dependencies = [
  "schemars",
  "serde",
  "tfi",
+ "thiserror",
 ]
 
 [[package]]

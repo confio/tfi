@@ -92,6 +92,26 @@ fn proper_initialization() {
 }
 
 #[test]
+fn commission_out_of_range() {
+    let err = instantiate(
+        mock_dependencies(&[]).as_mut(),
+        mock_env(),
+        mock_info("owner", &[]),
+        InstantiateMsg::new(
+            [
+                AssetInfo::Native("eth".to_owned()),
+                AssetInfo::Native("btc".to_owned()),
+            ],
+            1,
+        )
+        .with_commission(Decimal::percent(101)),
+    )
+    .unwrap_err();
+
+    assert_eq!(err, ContractError::InvalidCommission(Decimal::percent(101)));
+}
+
+#[test]
 fn provide_liquidity() {
     let mut deps = mock_dependencies(&[Coin {
         denom: "uusd".to_string(),

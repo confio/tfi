@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{Decimal, OverflowError, StdError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -32,4 +32,7 @@ pub enum ContractError {
 
     #[error("Invalid address length: {0}")]
     InvalidAddressLength(usize),
+
+    #[error("Invalid commission value: {0}")]
+    InvalidCommission(Decimal),
 }
