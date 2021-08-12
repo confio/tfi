@@ -5,6 +5,7 @@ use cosmwasm_std::{
     StdResult, SubMsg, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::querier::query_liquidity_token;
 use crate::response::MsgInstantiateContractResponse;
 use crate::state::{pair_key, read_pairs, Config, TmpPairInfo, CONFIG, PAIRS, TMP_PAIR_INFO};
@@ -22,7 +23,11 @@ pub fn instantiate(
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
+    if !(Decimal::zero()..=Decimal::one()).contains(&msg.default_commission) {
+        return Err(ContractError::InvalidCommission(msg.default_commission));
+    }
+
     let config = Config {
         owner: info.sender,
         token_code_id: msg.token_code_id,
@@ -36,7 +41,12 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateConfig {
             owner,
@@ -51,7 +61,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             token_code_id,
             pair_code_id,
             default_commission,
-        ),
+        )
+        .map_err(Into::into),
         ExecuteMsg::CreatePair {
             asset_infos,
             commission,
@@ -106,12 +117,18 @@ pub fn execute_create_pair(
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
     commission: Option<Decimal>,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
+    if let Some(commission) = commission {
+        if !(Decimal::zero()..=Decimal::one()).contains(&commission) {
+            return Err(ContractError::InvalidCommission(commission));
+        }
+    }
+
     let config: Config = CONFIG.load(deps.storage)?;
 
     let pair_key = pair_key(&asset_infos);
     if let Ok(Some(_)) = PAIRS.may_load(deps.storage, &pair_key) {
-        return Err(StdError::generic_err("Pair already exists"));
+        return Err(StdError::generic_err("Pair already exists").into());
     }
 
     let commission = commission.unwrap_or(config.default_commission);

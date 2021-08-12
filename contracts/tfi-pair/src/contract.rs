@@ -26,7 +26,11 @@ pub fn instantiate(
     env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
+    if !(Decimal::zero()..=Decimal::one()).contains(&msg.commission) {
+        return Err(ContractError::InvalidCommission(msg.commission));
+    }
+
     let pair_info: &PairInfo = &PairInfo::new(
         msg.asset_infos,
         env.contract.address.clone(),

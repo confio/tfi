@@ -1,6 +1,7 @@
 use crate::contract::{execute, instantiate, query, reply};
 use crate::mock_querier::mock_dependencies;
 
+use crate::error::ContractError;
 use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
 
 use cosmwasm_std::testing::{mock_env, mock_info};
@@ -115,7 +116,9 @@ fn update_config() {
 
     let res = execute(deps.as_mut(), env, info, msg);
     match res {
-        Err(StdError::GenericErr { msg, .. }) => assert_eq!(msg, "unauthorized"),
+        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => {
+            assert_eq!(msg, "unauthorized")
+        }
         _ => panic!("Must return unauthorized error"),
     }
 }
@@ -309,6 +312,23 @@ fn custom_default_commission() {
 }
 
 #[test]
+fn invalid_custom_default_commission() {
+    let mut deps = mock_dependencies(&[]);
+
+    let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(1001));
+
+    let env = mock_env();
+    let info = mock_info("addr0000", &[]);
+
+    let err = instantiate(deps.as_mut(), env, info, msg).unwrap_err();
+
+    assert_eq!(
+        err,
+        ContractError::InvalidCommission(Decimal::permille(1001))
+    );
+}
+
+#[test]
 fn custom_pair_commission() {
     let mut deps = mock_dependencies(&[]);
 
@@ -371,5 +391,38 @@ fn custom_pair_commission() {
             pair_key: pair_key(&asset_infos),
             commission: Decimal::permille(5),
         }
+    );
+}
+
+#[test]
+fn invalid_custom_pair_commission() {
+    let mut deps = mock_dependencies(&[]);
+
+    let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(5));
+
+    let env = mock_env();
+    let info = mock_info("addr0000", &[]);
+
+    // we can just call .unwrap() to assert this was a success
+    instantiate(deps.as_mut(), env, info, msg).unwrap();
+
+    let asset_infos = [
+        AssetInfo::Token(Addr::unchecked("asset0000")),
+        AssetInfo::Token(Addr::unchecked("asset0001")),
+    ];
+
+    let err = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("addr0000", &[]),
+        ExecuteCreatePair::new(asset_infos)
+            .with_commission(Decimal::permille(1001))
+            .into(),
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        ContractError::InvalidCommission(Decimal::permille(1001))
     );
 }
