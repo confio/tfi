@@ -155,14 +155,14 @@ pub struct Suite {
 /// Utility functions sending messages to execute contracts.
 impl Suite {
     /// Adds member to whitelist
-    pub fn add_member(&mut self, addr: impl Into<String>, weight: u64) -> Result<&mut Self> {
+    pub fn add_member(&mut self, addr: &Addr, weight: u64) -> Result<&mut Self> {
         self.app
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
                 &Cw4ExecuteMsg::UpdateMembers {
                     add: vec![Member {
-                        addr: addr.into(),
+                        addr: addr.to_string(),
                         weight,
                     }],
                     remove: vec![],
@@ -175,14 +175,14 @@ impl Suite {
     }
 
     /// Removes member from whitelist
-    pub fn remove_member(&mut self, addr: impl Into<String>) -> Result<&mut Self> {
+    pub fn remove_member(&mut self, addr: &Addr) -> Result<&mut Self> {
         self.app
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
                 &Cw4ExecuteMsg::UpdateMembers {
                     add: vec![],
-                    remove: vec![addr.into()],
+                    remove: vec![addr.to_string()],
                 },
                 &[],
             )
@@ -194,16 +194,16 @@ impl Suite {
     /// Executes transfer on `cash` contract
     pub fn transfer(
         &mut self,
-        executor: Addr,
-        recipient: impl Into<String>,
+        executor: &Addr,
+        recipient: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::Transfer {
-                    recipient: recipient.into(),
+                    recipient: recipient.to_string(),
                     amount: amount.into(),
                 },
                 &[],
@@ -214,10 +214,10 @@ impl Suite {
     }
 
     /// Executes burn on `cash` contract
-    pub fn burn(&mut self, executor: Addr, amount: u128) -> Result<&mut Self> {
+    pub fn burn(&mut self, executor: &Addr, amount: u128) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::Burn {
                     amount: amount.into(),
@@ -232,17 +232,17 @@ impl Suite {
     /// Executes send on `cash` contract
     pub fn send(
         &mut self,
-        executor: Addr,
-        recipient: impl Into<String>,
+        executor: &Addr,
+        recipient: &Addr,
         amount: u128,
         msg: impl Into<Binary>,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::Send {
-                    contract: recipient.into(),
+                    contract: recipient.to_string(),
                     amount: amount.into(),
                     msg: msg.into(),
                 },
@@ -254,18 +254,13 @@ impl Suite {
     }
 
     /// Executes mint on `cash` contract
-    pub fn mint(
-        &mut self,
-        executor: Addr,
-        recipient: impl Into<String>,
-        amount: u128,
-    ) -> Result<&mut Self> {
+    pub fn mint(&mut self, executor: &Addr, recipient: &Addr, amount: u128) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::Mint {
-                    recipient: recipient.into(),
+                    recipient: recipient.to_string(),
                     amount: amount.into(),
                 },
                 &[],
@@ -278,16 +273,16 @@ impl Suite {
     /// Executes increasing allowance on `cash` contract
     pub fn increase_allowance(
         &mut self,
-        executor: Addr,
-        spender: impl Into<String>,
+        executor: &Addr,
+        spender: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::IncreaseAllowance {
-                    spender: spender.into(),
+                    spender: spender.to_string(),
                     amount: amount.into(),
                     expires: None,
                 },
@@ -301,16 +296,16 @@ impl Suite {
     /// Executes decreasing allowance on `cash` contract
     pub fn decrease_allowance(
         &mut self,
-        executor: Addr,
-        spender: impl Into<String>,
+        executor: &Addr,
+        spender: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::DecreaseAllowance {
-                    spender: spender.into(),
+                    spender: spender.to_string(),
                     amount: amount.into(),
                     expires: None,
                 },
@@ -324,18 +319,18 @@ impl Suite {
     /// Executes transfer from on `cash` contract
     pub fn transfer_from(
         &mut self,
-        executor: Addr,
-        owner: impl Into<String>,
-        recipient: impl Into<String>,
+        executor: &Addr,
+        owner: &Addr,
+        recipient: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::TransferFrom {
-                    owner: owner.into(),
-                    recipient: recipient.into(),
+                    owner: owner.to_string(),
+                    recipient: recipient.to_string(),
                     amount: amount.into(),
                 },
                 &[],
@@ -346,18 +341,13 @@ impl Suite {
     }
 
     /// Executes burn from on `cash` contract
-    pub fn burn_from(
-        &mut self,
-        executor: Addr,
-        owner: impl Into<String>,
-        amount: u128,
-    ) -> Result<&mut Self> {
+    pub fn burn_from(&mut self, executor: &Addr, owner: &Addr, amount: u128) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::BurnFrom {
-                    owner: owner.into(),
+                    owner: owner.to_string(),
                     amount: amount.into(),
                 },
                 &[],
@@ -370,19 +360,19 @@ impl Suite {
     /// Executes send from on `cash` contract
     pub fn send_from(
         &mut self,
-        executor: Addr,
-        owner: impl Into<String>,
-        recipient: impl Into<String>,
+        executor: &Addr,
+        owner: &Addr,
+        recipient: &Addr,
         amount: u128,
         msg: impl Into<Binary>,
     ) -> Result<&mut Self> {
         self.app
             .execute_contract(
-                executor,
+                executor.clone(),
                 self.cash.addr(),
                 &ExecuteMsg::SendFrom {
-                    owner: owner.into(),
-                    contract: recipient.into(),
+                    owner: owner.to_string(),
+                    contract: recipient.to_string(),
                     amount: amount.into(),
                     msg: msg.into(),
                 },

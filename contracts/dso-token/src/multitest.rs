@@ -55,19 +55,16 @@ fn transfer() {
         .init()
         .unwrap();
     let (member1, member2) = (suite.members[0].clone(), suite.members[1].clone());
+    let non_member = Addr::unchecked("non-member");
 
     // send to whitelisted member works
-    suite
-        .transfer(member1.clone(), member2.clone(), 500)
-        .unwrap();
+    suite.transfer(&member1, &member2, 500).unwrap();
 
     assert_eq!(suite.balance(&member1).unwrap(), 500);
     assert_eq!(suite.balance(&member2).unwrap(), 2500);
 
     // send to non-whitelisted address fails
-    let err = suite
-        .transfer(member1.clone(), "non-member", 500)
-        .unwrap_err();
+    let err = suite.transfer(&member1, &non_member, 500).unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.balance(&member1).unwrap(), 500);
@@ -83,16 +80,16 @@ fn burn() {
     let member = suite.members[0].clone();
 
     // whitelisted member can burn his own tokens
-    suite.burn(member.clone(), 500).unwrap();
+    suite.burn(&member, 500).unwrap();
 
     assert_eq!(suite.balance(&suite.members[0]).unwrap(), 500);
     assert_eq!(suite.total_supply().unwrap(), 500);
 
     // non whitelisted can't burn tokens
     let err = suite
-        .remove_member(member.clone())
+        .remove_member(&member)
         .unwrap()
-        .burn(member.clone(), 500)
+        .burn(&member, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -115,7 +112,7 @@ fn send() {
 
     // send to non-whitelisted address fails
     let err = suite
-        .send(member.clone(), receiver.addr(), 500, "msg".as_bytes())
+        .send(&member, &receiver.addr(), 500, "msg".as_bytes())
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -125,9 +122,9 @@ fn send() {
 
     // send to whitelisted address works
     suite
-        .add_member(receiver.addr(), 10)
+        .add_member(&receiver.addr(), 10)
         .unwrap()
-        .send(member.clone(), receiver.addr(), 500, "'msg2'".as_bytes())
+        .send(&member, &receiver.addr(), 500, "'msg2'".as_bytes())
         .unwrap();
 
     assert_eq!(suite.balance(&member).unwrap(), 500);
@@ -143,9 +140,9 @@ fn send() {
 
     // sned by non-whitelisted owner fails
     let err = suite
-        .remove_member(member.clone())
+        .remove_member(&member)
         .unwrap()
-        .send(member.clone(), receiver.addr(), 500, "msg3".as_bytes())
+        .send(&member, &receiver.addr(), 500, "msg3".as_bytes())
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -169,23 +166,24 @@ fn mint() {
         .init()
         .unwrap();
     let (minter, member) = (suite.minter.clone().unwrap(), suite.members[0].clone());
+    let non_member = Addr::unchecked("non-member");
 
     // mint by non-whitelisted minter fails
-    suite.mint(minter.clone(), member.clone(), 500).unwrap_err();
+    suite.mint(&minter, &member, 500).unwrap_err();
 
     assert_eq!(suite.total_supply().unwrap(), 0);
 
     // mint by whitelisted minter to whitelisted member works
     suite
-        .add_member(minter.clone(), 20)
+        .add_member(&minter, 20)
         .unwrap()
-        .mint(minter.clone(), member.clone(), 500)
+        .mint(&minter, &member, 500)
         .unwrap();
     assert_eq!(suite.balance(&member).unwrap(), 500);
     assert_eq!(suite.total_supply().unwrap(), 500);
 
     // mint to non-whitelisted addres fails
-    let err = suite.mint(minter, "non-member", 500).unwrap_err();
+    let err = suite.mint(&minter, &non_member, 500).unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.total_supply().unwrap(), 500);
@@ -201,17 +199,14 @@ fn increase_allowance() {
     let member2 = Addr::unchecked("member2");
 
     // whitelisted member can increse allowance on his own tokens
-    suite
-        .increase_allowance(member1.clone(), member2.to_string(), 500)
-        .unwrap();
-
+    suite.increase_allowance(&member1, &member2, 500).unwrap();
     assert_eq!(suite.allowance(&member1, &member2).unwrap(), 500);
 
     // non whitelisted can't increase allowance
     let err = suite
-        .remove_member(member1.clone())
+        .remove_member(&member1)
         .unwrap()
-        .increase_allowance(member1.clone(), member2.clone(), 500)
+        .increase_allowance(&member1, &member2, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -228,22 +223,17 @@ fn decrease_allowance() {
     let member2 = Addr::unchecked("member2");
 
     // setup initial allowance
-    suite
-        .increase_allowance(member1.clone(), member2.clone(), 1000)
-        .unwrap();
+    suite.increase_allowance(&member1, &member2, 1000).unwrap();
 
     // whitelisted member can decrease allowance on his own tokens
-    suite
-        .decrease_allowance(member1.clone(), member2.clone(), 500)
-        .unwrap();
-
+    suite.decrease_allowance(&member1, &member2, 500).unwrap();
     assert_eq!(suite.allowance(&member1, &member2).unwrap(), 500);
 
     // non whitelisted can't decrease allowance
     let err = suite
-        .remove_member(member1.clone())
+        .remove_member(&member1)
         .unwrap()
-        .decrease_allowance(member1.clone(), member2.clone(), 500)
+        .decrease_allowance(&member1, &member2, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -267,14 +257,14 @@ fn transfer_from() {
 
     // setup allowance
     suite
-        .increase_allowance(member.clone(), spender.clone(), 1000)
+        .increase_allowance(&member, &spender, 1000)
         .unwrap()
-        .increase_allowance(member.clone(), non_member.clone(), 1000)
+        .increase_allowance(&member, &non_member, 1000)
         .unwrap();
 
     // send when all whitelisted member works
     suite
-        .transfer_from(spender.clone(), member.clone(), receiver.clone(), 500)
+        .transfer_from(&spender, &member, &receiver, 500)
         .unwrap();
 
     assert_eq!(suite.balance(&member).unwrap(), 1500);
@@ -283,7 +273,7 @@ fn transfer_from() {
 
     // send to non-whitelisted address fails
     let err = suite
-        .transfer_from(spender.clone(), member.clone(), non_member.clone(), 500)
+        .transfer_from(&spender, &member, &non_member, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -293,7 +283,7 @@ fn transfer_from() {
 
     // send by non-whitelisted allowed address fails
     let err = suite
-        .transfer_from(non_member.clone(), member.clone(), receiver.clone(), 500)
+        .transfer_from(&non_member, &member, &receiver, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -303,9 +293,9 @@ fn transfer_from() {
 
     // send by non-whitelisted allowed address fails
     let err = suite
-        .remove_member(member.clone())
+        .remove_member(&member)
         .unwrap()
-        .transfer_from(spender.clone(), member.clone(), receiver.clone(), 500)
+        .transfer_from(&spender, &member, &receiver, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -326,24 +316,20 @@ fn burn_from() {
 
     // setup allowances
     suite
-        .increase_allowance(member.clone(), spender.clone(), 1000)
+        .increase_allowance(&member, &spender, 1000)
         .unwrap()
-        .increase_allowance(member.clone(), non_member.clone(), 1000)
+        .increase_allowance(&member, &non_member, 1000)
         .unwrap();
 
     // whitelisted member can burn tokens he is allowed on another whitelisted address
-    suite
-        .burn_from(spender.clone(), member.clone(), 500)
-        .unwrap();
+    suite.burn_from(&spender, &member, 500).unwrap();
 
     assert_eq!(suite.balance(&member).unwrap(), 1500);
     assert_eq!(suite.allowance(&member, &spender).unwrap(), 500);
     assert_eq!(suite.total_supply().unwrap(), 1500);
 
     // non whitelisted can't burn tokens
-    let err = suite
-        .burn_from(non_member.clone(), member.clone(), 500)
-        .unwrap_err();
+    let err = suite.burn_from(&non_member, &member, 500).unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.balance(&member).unwrap(), 1500);
@@ -352,9 +338,9 @@ fn burn_from() {
 
     // cannot burn tokens from non-whitelisted account
     let err = suite
-        .remove_member(member.clone())
+        .remove_member(&member)
         .unwrap()
-        .burn_from(spender.clone(), member.clone(), 500)
+        .burn_from(&spender, &member, 500)
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -380,20 +366,14 @@ fn send_from() {
 
     // Set up allowances
     suite
-        .increase_allowance(member.clone(), spender.clone(), 500)
+        .increase_allowance(&member, &spender, 500)
         .unwrap()
-        .increase_allowance(member.clone(), non_member.clone(), 500)
+        .increase_allowance(&member, &non_member, 500)
         .unwrap();
 
     // send to non-whitelisted address fails
     let err = suite
-        .send_from(
-            spender.clone(),
-            member.clone(),
-            receiver.addr(),
-            500,
-            "msg".as_bytes(),
-        )
+        .send_from(&spender, &member, &receiver.addr(), 500, "msg".as_bytes())
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
@@ -404,12 +384,12 @@ fn send_from() {
 
     // send when all whitelisted works
     suite
-        .add_member(receiver.addr(), 10)
+        .add_member(&receiver.addr(), 10)
         .unwrap()
         .send_from(
-            spender.clone(),
-            member.clone(),
-            receiver.addr(),
+            &spender,
+            &member,
+            &receiver.addr(),
             500,
             "'msg2'".as_bytes(),
         )
@@ -430,9 +410,9 @@ fn send_from() {
     // send by non-whitelisted spender fails
     let err = suite
         .send_from(
-            non_member.clone(),
-            member.clone(),
-            receiver.addr(),
+            &non_member,
+            &member,
+            &receiver.addr(),
             500,
             "msg3".as_bytes(),
         )
@@ -453,15 +433,9 @@ fn send_from() {
 
     // send from non-whitelisted owner fails
     let err = suite
-        .remove_member(member.clone())
+        .remove_member(&member)
         .unwrap()
-        .send_from(
-            spender.clone(),
-            member.clone(),
-            receiver.addr(),
-            500,
-            "msg3".as_bytes(),
-        )
+        .send_from(&spender, &member, &receiver.addr(), 500, "msg3".as_bytes())
         .unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
