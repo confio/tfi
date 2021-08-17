@@ -46,7 +46,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-fn verify_sender_on_whitelist(deps: &DepsMut, sender: &Addr) -> Result<(), ContractError> {
+fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let whitelist = WHITELIST.load(deps.storage)?;
     if whitelist.is_member(&deps.querier, sender)?.is_none() {
         return Err(ContractError::Unauthorized {});
@@ -55,7 +55,7 @@ fn verify_sender_on_whitelist(deps: &DepsMut, sender: &Addr) -> Result<(), Contr
 }
 
 fn verify_sender_and_addresses_on_whitelist(
-    deps: &DepsMut,
+    deps: Deps,
     sender: &Addr,
     addresses: &[&str],
 ) -> Result<(), ContractError> {
@@ -85,11 +85,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let res = match msg {
         ExecuteMsg::Transfer { recipient, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&recipient])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
             cw20_base::contract::execute_transfer(deps, env, info, recipient, amount)
         }
         ExecuteMsg::Burn { amount } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::contract::execute_burn(deps, env, info, amount)
         }
         ExecuteMsg::Send {
@@ -97,11 +97,11 @@ pub fn execute(
             amount,
             msg,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&contract])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&contract])?;
             cw20_base::contract::execute_send(deps, env, info, contract, amount, msg)
         }
         ExecuteMsg::Mint { recipient, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&recipient])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
             cw20_base::contract::execute_mint(deps, env, info, recipient, amount)
         }
         ExecuteMsg::IncreaseAllowance {
@@ -109,7 +109,7 @@ pub fn execute(
             amount,
             expires,
         } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_increase_allowance(
                 deps, env, info, spender, amount, expires,
             )
@@ -119,7 +119,7 @@ pub fn execute(
             amount,
             expires,
         } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_decrease_allowance(
                 deps, env, info, spender, amount, expires,
             )
@@ -129,11 +129,15 @@ pub fn execute(
             recipient,
             amount,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner, &recipient])?;
+            verify_sender_and_addresses_on_whitelist(
+                deps.as_ref(),
+                &info.sender,
+                &[&owner, &recipient],
+            )?;
             cw20_base::allowances::execute_transfer_from(deps, env, info, owner, recipient, amount)
         }
         ExecuteMsg::BurnFrom { owner, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&owner])?;
             cw20_base::allowances::execute_burn_from(deps, env, info, owner, amount)
         }
         ExecuteMsg::SendFrom {
@@ -142,7 +146,11 @@ pub fn execute(
             amount,
             msg,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner, &contract])?;
+            verify_sender_and_addresses_on_whitelist(
+                deps.as_ref(),
+                &info.sender,
+                &[&owner, &contract],
+            )?;
             cw20_base::allowances::execute_send_from(deps, env, info, owner, contract, amount, msg)
         }
         ExecuteMsg::UpdateMarketing {
