@@ -241,8 +241,8 @@ fn reply_test() {
         pair_res,
         PairInfo::new(
             asset_infos,
-            Addr::unchecked("liquidity0000"),
             Addr::unchecked("pair0000"),
+            Addr::unchecked("liquidity0000"),
         )
     );
 }
