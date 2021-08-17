@@ -6,6 +6,8 @@ mod querier;
 mod response;
 
 #[cfg(test)]
+mod multitest;
+#[cfg(test)]
 mod testing;
 
 #[cfg(test)]

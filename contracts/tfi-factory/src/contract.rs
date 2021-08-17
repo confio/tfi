@@ -178,8 +178,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
         &tmp_pair_info.pair_key,
         &PairInfo::new(
             tmp_pair_info.asset_infos,
-            liquidity_token.clone(),
             pair_contract.clone(),
+            liquidity_token.clone(),
         )
         .with_commission(tmp_pair_info.commission),
     )?;

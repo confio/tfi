@@ -818,14 +818,23 @@ dependencies = [
 name = "tfi-factory"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
+ "cw-multi-test",
  "cw-storage-plus",
+ "cw20",
+ "cw20-base",
+ "cw4",
+ "cw4-group",
+ "derivative",
+ "dso-token",
  "protobuf",
  "schemars",
  "serde",
  "tfi",
+ "tfi-pair",
  "thiserror",
 ]
 
