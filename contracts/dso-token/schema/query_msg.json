@@ -197,6 +197,59 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Get info about particular reedem\n\nReturn type: ReedemResponse",
+      "type": "object",
+      "required": [
+        "reedem"
+      ],
+      "properties": {
+        "reedem": {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "description": "Code used for reedem",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns reedems which took place on this token Return type: AllReedemsResponse",
+      "type": "object",
+      "required": [
+        "all_reedems"
+      ],
+      "properties": {
+        "all_reedems": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximum number of entries to return",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "description": "Reedem code where to start reading for pagination",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

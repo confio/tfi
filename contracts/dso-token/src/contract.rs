@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::allowances::query_allowance;
@@ -7,15 +8,24 @@ use cw20_base::contract::{
     query_balance, query_download_logo, query_marketing_info, query_minter, query_token_info,
 };
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
+use cw20_base::state::{BALANCES, TOKEN_INFO};
+use cw20_base::ContractError as Cw20ContractError;
 use cw4::Cw4Contract;
+use cw_storage_plus::Bound;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg, WhitelistResponse};
-use crate::state::WHITELIST;
+use crate::msg::{
+    AllReedemsResponse, ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg, ReedemInfo,
+    ReedemResponse, WhitelistResponse,
+};
+use crate::state::{Reedem, REEDEMS, WHITELIST};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:dso-token";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+// settings for pagination
+const MAX_LIMIT: u32 = 30;
+const DEFAULT_LIMIT: u32 = 10;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -75,7 +85,64 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
     Ok(())
 }
 
-// And declare a custom Error variant for the ones where you will want to make use of it
+/// Reedems token effectively burning them and storing information about reedem internally. This
+/// also triggers custom `reedem` event with details of process. Before reedeming, sender should
+/// make sure, that token provider is aware about such possibility and is willing to cover reedem
+/// off-chain, otherwise this may be equivalent to destrotying commodity.
+fn execute_reedem(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    code: String,
+    memo: String,
+) -> Result<Response, ContractError> {
+    if REEDEMS.has(deps.storage, code.clone()) {
+        return Err(ContractError::ReedemCodeUsed {});
+    }
+
+    if amount == Uint128::zero() {
+        return Err(Cw20ContractError::InvalidZeroAmount {}.into());
+    }
+
+    // lower balance
+    BALANCES.update(
+        deps.storage,
+        &info.sender,
+        |balance: Option<Uint128>| -> StdResult<_> {
+            Ok(balance.unwrap_or_default().checked_sub(amount)?)
+        },
+    )?;
+    // reduce total_supply
+    TOKEN_INFO.update(deps.storage, |mut info| -> StdResult<_> {
+        info.total_supply = info.total_supply.checked_sub(amount)?;
+        Ok(info)
+    })?;
+
+    REEDEMS.save(
+        deps.storage,
+        code.clone(),
+        &Reedem {
+            sender: info.sender.clone(),
+            amount,
+            memo: memo.clone(),
+            timestamp: env.block.time,
+        },
+    )?;
+
+    let event = Event::new("reedem")
+        .add_attribute("code", code)
+        .add_attribute("sender", info.sender.clone())
+        .add_attribute("amount", amount)
+        .add_attribute("memo", memo);
+
+    Ok(Response::new()
+        .add_event(event)
+        .add_attribute("action", "reedem")
+        .add_attribute("from", info.sender)
+        .add_attribute("amount", amount))
+}
+
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
@@ -86,11 +153,11 @@ pub fn execute(
     let res = match msg {
         ExecuteMsg::Transfer { recipient, amount } => {
             verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
-            cw20_base::contract::execute_transfer(deps, env, info, recipient, amount)
+            cw20_base::contract::execute_transfer(deps, env, info, recipient, amount)?
         }
         ExecuteMsg::Burn { amount } => {
             verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
-            cw20_base::contract::execute_burn(deps, env, info, amount)
+            cw20_base::contract::execute_burn(deps, env, info, amount)?
         }
         ExecuteMsg::Send {
             contract,
@@ -98,11 +165,11 @@ pub fn execute(
             msg,
         } => {
             verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&contract])?;
-            cw20_base::contract::execute_send(deps, env, info, contract, amount, msg)
+            cw20_base::contract::execute_send(deps, env, info, contract, amount, msg)?
         }
         ExecuteMsg::Mint { recipient, amount } => {
             verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
-            cw20_base::contract::execute_mint(deps, env, info, recipient, amount)
+            cw20_base::contract::execute_mint(deps, env, info, recipient, amount)?
         }
         ExecuteMsg::IncreaseAllowance {
             spender,
@@ -112,7 +179,7 @@ pub fn execute(
             verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_increase_allowance(
                 deps, env, info, spender, amount, expires,
-            )
+            )?
         }
         ExecuteMsg::DecreaseAllowance {
             spender,
@@ -122,7 +189,7 @@ pub fn execute(
             verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_decrease_allowance(
                 deps, env, info, spender, amount, expires,
-            )
+            )?
         }
         ExecuteMsg::TransferFrom {
             owner,
@@ -134,11 +201,11 @@ pub fn execute(
                 &info.sender,
                 &[&owner, &recipient],
             )?;
-            cw20_base::allowances::execute_transfer_from(deps, env, info, owner, recipient, amount)
+            cw20_base::allowances::execute_transfer_from(deps, env, info, owner, recipient, amount)?
         }
         ExecuteMsg::BurnFrom { owner, amount } => {
             verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&owner])?;
-            cw20_base::allowances::execute_burn_from(deps, env, info, owner, amount)
+            cw20_base::allowances::execute_burn_from(deps, env, info, owner, amount)?
         }
         ExecuteMsg::SendFrom {
             owner,
@@ -151,7 +218,7 @@ pub fn execute(
                 &info.sender,
                 &[&owner, &contract],
             )?;
-            cw20_base::allowances::execute_send_from(deps, env, info, owner, contract, amount, msg)
+            cw20_base::allowances::execute_send_from(deps, env, info, owner, contract, amount, msg)?
         }
         ExecuteMsg::UpdateMarketing {
             project,
@@ -164,12 +231,15 @@ pub fn execute(
             project,
             description,
             marketing,
-        ),
+        )?,
         ExecuteMsg::UploadLogo(logo) => {
-            cw20_base::contract::execute_upload_logo(deps, env, info, logo)
+            cw20_base::contract::execute_upload_logo(deps, env, info, logo)?
+        }
+        ExecuteMsg::Reedem { amount, code, memo } => {
+            execute_reedem(deps, env, info, amount, code, memo)?
         }
     };
-    Ok(res?)
+    Ok(res)
 }
 
 fn query_whitelist(deps: Deps) -> StdResult<WhitelistResponse> {
@@ -183,6 +253,40 @@ fn query_is_whitelisted(deps: Deps, address: String) -> StdResult<IsWhitelistedR
     let whitelist = WHITELIST.load(deps.storage)?;
     let whitelisted = whitelist.is_member(&deps.querier, &address)?.is_some();
     Ok(IsWhitelistedResponse { whitelisted })
+}
+
+fn query_reedem(deps: Deps, code: String) -> StdResult<ReedemResponse> {
+    REEDEMS
+        .may_load(deps.storage, code)
+        .map(|reedem| ReedemResponse { reedem })
+}
+
+fn query_all_reedems(
+    deps: Deps,
+    start: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<AllReedemsResponse> {
+    let reedems = REEDEMS
+        .range(
+            deps.storage,
+            start.map(Bound::exclusive),
+            None,
+            Order::Ascending,
+        )
+        .take(limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize)
+        .map(|reedem| {
+            let (code, reedem) = reedem?;
+            Ok(ReedemInfo {
+                code: String::from_utf8(code)?,
+                sender: reedem.sender,
+                amount: reedem.amount,
+                memo: reedem.memo,
+                timestamp: reedem.timestamp,
+            })
+        })
+        .collect::<StdResult<_>>()?;
+
+    Ok(AllReedemsResponse { reedems })
 }
 
 #[entry_point]
@@ -206,6 +310,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
+        QueryMsg::Reedem { code } => to_binary(&query_reedem(deps, code)?),
+        QueryMsg::AllReedems { start_after, limit } => {
+            to_binary(&query_all_reedems(deps, start_after, limit)?)
+        }
     }
 }
 
