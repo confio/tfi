@@ -1,12 +1,15 @@
 mod suite;
 
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Deps, Uint128};
 use cw20::{Cw20ReceiveMsg, TokenInfoResponse};
 
+use crate::contract::{verify_sender_and_addresses_on_whitelist, verify_sender_on_whitelist};
 use crate::error::ContractError;
 use crate::msg::{IsWhitelistedResponse, QueryMsg, WhitelistResponse};
 
+use crate::state::WHITELIST;
 use anyhow::Error;
+use cosmwasm_std::testing::{MockApi, MockStorage};
 
 /// Compares if error is as expected
 ///
@@ -95,6 +98,38 @@ fn burn() {
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.balance(&member).unwrap(), 500);
     assert_eq!(suite.total_supply().unwrap(), 500);
+}
+
+#[test]
+fn whitelist_works() {
+    let suite = suite::Config::new()
+        .with_member("member", 1000, 10)
+        .with_member("member2", 1000, 0)
+        .init()
+        .unwrap();
+    let member = suite.members[0].clone();
+    let member2 = suite.members[1].clone();
+    let non_member = Addr::unchecked("nonmember");
+
+    // set our local data
+    let api = MockApi::default();
+    let mut storage = MockStorage::new();
+    WHITELIST.save(&mut storage, &suite.whitelist).unwrap();
+    let deps = Deps {
+        storage: &storage,
+        api: &api,
+        // querier is pointing to the app (with other contract initialized) for now
+        // we can remove the need for multi-test later
+        querier: suite.app.wrap(),
+    };
+
+    // sender whitelisted regardless of weight
+    verify_sender_on_whitelist(deps.clone(), &member).unwrap();
+    verify_sender_on_whitelist(deps.clone(), &member2).unwrap();
+    let err = verify_sender_on_whitelist(deps.clone(), &non_member).unwrap_err();
+    assert_eq!(err, ContractError::Unauthorized {});
+
+    verify_sender_and_addresses_on_whitelist(deps.clone(), &member, &[member2.as_str()]).unwrap();
 }
 
 #[test]

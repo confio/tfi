@@ -46,7 +46,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
+pub(crate) fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let whitelist = WHITELIST.load(deps.storage)?;
     if whitelist.is_member(&deps.querier, sender)?.is_none() {
         return Err(ContractError::Unauthorized {});
@@ -54,7 +54,7 @@ fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractE
     Ok(())
 }
 
-fn verify_sender_and_addresses_on_whitelist(
+pub(crate) fn verify_sender_and_addresses_on_whitelist(
     deps: Deps,
     sender: &Addr,
     addresses: &[&str],
