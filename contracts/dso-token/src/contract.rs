@@ -208,3 +208,114 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{MockApi, MockStorage};
+    use cosmwasm_std::{
+        from_slice, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest, SystemError,
+        SystemResult, WasmQuery,
+    };
+    use cw4::member_key;
+    use std::collections::HashMap;
+
+    struct GroupQuerier {
+        contract: String,
+        // honestly it would probably be easier to use a Map and Storage here
+        membership: HashMap<Vec<u8>, u64>,
+    }
+
+    impl GroupQuerier {
+        pub fn new(contract: &Addr, members: &[(&str, u64)]) -> Self {
+            let mut membership = HashMap::new();
+            for (member, weight) in members {
+                // fake the cw4 raw data (see is_member)
+                membership.insert(member_key(member), *weight);
+            }
+            GroupQuerier {
+                contract: contract.to_string(),
+                membership,
+            }
+        }
+
+        fn handle_query(&self, request: QueryRequest<Empty>) -> QuerierResult {
+            match request {
+                QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
+                    self.query_wasm(contract_addr, key)
+                }
+                QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
+                    SystemResult::Err(SystemError::UnsupportedRequest {
+                        kind: "WasmQuery::Smart".to_string(),
+                    })
+                }
+                _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "not wasm".to_string(),
+                }),
+            }
+        }
+
+        fn query_wasm(&self, contract_addr: String, key: Binary) -> QuerierResult {
+            if contract_addr != self.contract {
+                SystemResult::Err(SystemError::NoSuchContract {
+                    addr: contract_addr,
+                })
+            } else {
+                let weight = self.membership.get(&key.to_vec()).map(|v| *v);
+                let res = to_binary(&weight);
+                SystemResult::Ok(res.into())
+            }
+        }
+    }
+
+    impl Querier for GroupQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
+            let request: QueryRequest<Empty> = match from_slice(bin_request) {
+                Ok(v) => v,
+                Err(e) => {
+                    return SystemResult::Err(SystemError::InvalidRequest {
+                        error: format!("Parsing query request: {}", e),
+                        request: bin_request.into(),
+                    })
+                }
+            };
+            self.handle_query(request)
+        }
+    }
+
+    #[test]
+    // a version of multitest::whitelist_works that doesn't need multitest, App or suite
+    fn whitelist_works() {
+        let member = Addr::unchecked("member");
+        let member2 = Addr::unchecked("member2");
+        let non_member = Addr::unchecked("nonmember");
+
+        let whitelist_addr = Addr::unchecked("whitelist");
+
+        let querier = GroupQuerier::new(
+            &whitelist_addr,
+            &[(member.as_str(), 10), (member2.as_str(), 0)],
+        );
+
+        // set our local data
+        let api = MockApi::default();
+        let mut storage = MockStorage::new();
+        WHITELIST
+            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .unwrap();
+        let deps = Deps {
+            storage: &storage,
+            api: &api,
+            querier: QuerierWrapper::new(&querier),
+        };
+
+        // sender whitelisted regardless of weight
+        verify_sender_on_whitelist(deps.clone(), &member).unwrap();
+        verify_sender_on_whitelist(deps.clone(), &member2).unwrap();
+        let err = verify_sender_on_whitelist(deps.clone(), &non_member).unwrap_err();
+        assert_eq!(err, ContractError::Unauthorized {});
+
+        verify_sender_and_addresses_on_whitelist(deps.clone(), &member, &[member2.as_str()])
+            .unwrap();
+    }
+}
