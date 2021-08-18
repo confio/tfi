@@ -124,12 +124,12 @@ fn whitelist_works() {
     };
 
     // sender whitelisted regardless of weight
-    verify_sender_on_whitelist(deps.clone(), &member).unwrap();
-    verify_sender_on_whitelist(deps.clone(), &member2).unwrap();
-    let err = verify_sender_on_whitelist(deps.clone(), &non_member).unwrap_err();
+    verify_sender_on_whitelist(deps, &member).unwrap();
+    verify_sender_on_whitelist(deps, &member2).unwrap();
+    let err = verify_sender_on_whitelist(deps, &non_member).unwrap_err();
     assert_eq!(err, ContractError::Unauthorized {});
 
-    verify_sender_and_addresses_on_whitelist(deps.clone(), &member, &[member2.as_str()]).unwrap();
+    verify_sender_and_addresses_on_whitelist(deps, &member, &[member2.as_str()]).unwrap();
 }
 
 #[test]

@@ -214,28 +214,27 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{MockApi, MockStorage};
     use cosmwasm_std::{
-        from_slice, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest, SystemError,
-        SystemResult, WasmQuery,
+        from_slice, ContractResult, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest,
+        Storage, SystemError, SystemResult, WasmQuery,
     };
-    use cw4::member_key;
-    use std::collections::HashMap;
+    use cw_storage_plus::Map;
+
+    const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
 
     struct GroupQuerier {
         contract: String,
-        // honestly it would probably be easier to use a Map and Storage here
-        membership: HashMap<Vec<u8>, u64>,
+        storage: MockStorage,
     }
 
     impl GroupQuerier {
-        pub fn new(contract: &Addr, members: &[(&str, u64)]) -> Self {
-            let mut membership = HashMap::new();
+        pub fn new(contract: &Addr, members: &[(&Addr, u64)]) -> Self {
+            let mut storage = MockStorage::new();
             for (member, weight) in members {
-                // fake the cw4 raw data (see is_member)
-                membership.insert(member_key(member), *weight);
+                MEMBERS.save(&mut storage, member, weight).unwrap();
             }
             GroupQuerier {
                 contract: contract.to_string(),
-                membership,
+                storage,
             }
         }
 
@@ -255,15 +254,15 @@ mod tests {
             }
         }
 
+        // TODO: we should be able to add a custom wasm handler to MockQuerier from cosmwasm_std::mock
         fn query_wasm(&self, contract_addr: String, key: Binary) -> QuerierResult {
             if contract_addr != self.contract {
                 SystemResult::Err(SystemError::NoSuchContract {
                     addr: contract_addr,
                 })
             } else {
-                let weight = self.membership.get(&key.to_vec()).map(|v| *v);
-                let res = to_binary(&weight);
-                SystemResult::Ok(res.into())
+                let bin = self.storage.get(&key).unwrap_or_default();
+                SystemResult::Ok(ContractResult::Ok(bin.into()))
             }
         }
     }
@@ -292,10 +291,7 @@ mod tests {
 
         let whitelist_addr = Addr::unchecked("whitelist");
 
-        let querier = GroupQuerier::new(
-            &whitelist_addr,
-            &[(member.as_str(), 10), (member2.as_str(), 0)],
-        );
+        let querier = GroupQuerier::new(&whitelist_addr, &[(&member, 10), (&member2, 0)]);
 
         // set our local data
         let api = MockApi::default();
@@ -310,12 +306,11 @@ mod tests {
         };
 
         // sender whitelisted regardless of weight
-        verify_sender_on_whitelist(deps.clone(), &member).unwrap();
-        verify_sender_on_whitelist(deps.clone(), &member2).unwrap();
-        let err = verify_sender_on_whitelist(deps.clone(), &non_member).unwrap_err();
+        verify_sender_on_whitelist(deps, &member).unwrap();
+        verify_sender_on_whitelist(deps, &member2).unwrap();
+        let err = verify_sender_on_whitelist(deps, &non_member).unwrap_err();
         assert_eq!(err, ContractError::Unauthorized {});
 
-        verify_sender_and_addresses_on_whitelist(deps.clone(), &member, &[member2.as_str()])
-            .unwrap();
+        verify_sender_and_addresses_on_whitelist(deps, &member, &[member2.as_str()]).unwrap();
     }
 }
