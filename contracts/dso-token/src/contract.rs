@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
-    StdResult, Uint128,
+    StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::allowances::query_allowance;
@@ -95,6 +95,7 @@ fn execute_reedem(
     info: MessageInfo,
     amount: Uint128,
     code: String,
+    sender: Option<String>,
     memo: String,
 ) -> Result<Response, ContractError> {
     if REEDEMS.has(deps.storage, code.clone()) {
@@ -130,9 +131,16 @@ fn execute_reedem(
         },
     )?;
 
+    let sender = if let Some(sender) = sender {
+        deps.api.addr_validate(&sender)?;
+        sender
+    } else {
+        info.sender.to_string()
+    };
+
     let event = Event::new("reedem")
         .add_attribute("code", code)
-        .add_attribute("sender", info.sender.clone())
+        .add_attribute("sender", sender)
         .add_attribute("amount", amount)
         .add_attribute("memo", memo);
 
@@ -141,6 +149,50 @@ fn execute_reedem(
         .add_attribute("action", "reedem")
         .add_attribute("from", info.sender)
         .add_attribute("amount", amount))
+}
+
+/// Removes info about reedems from contract, can be performed by minter only
+fn execute_remove_reedems(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    codes: Vec<String>,
+) -> Result<Response, ContractError> {
+    let config = TOKEN_INFO.load(deps.storage)?;
+    if config.mint.is_none() || config.mint.as_ref().unwrap().minter != info.sender {
+        return Err(Cw20ContractError::Unauthorized {}.into());
+    }
+
+    for code in codes {
+        REEDEMS.remove(deps.storage, code);
+    }
+
+    Ok(Response::new().add_attribute("action", "remove_reedems"))
+}
+
+/// Removes all reedems info from contract
+fn execute_clean_reedems(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let config = TOKEN_INFO.load(deps.storage)?;
+    if config.mint.is_none() || config.mint.as_ref().unwrap().minter != info.sender {
+        return Err(Cw20ContractError::Unauthorized {}.into());
+    }
+
+    let keys: Vec<_> = REEDEMS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    for key in keys {
+        REEDEMS.remove(
+            deps.storage,
+            String::from_utf8(key).map_err(StdError::from)?,
+        )
+    }
+
+    Ok(Response::new().add_attribute("action", "remove_all_reedems"))
 }
 
 #[entry_point]
@@ -235,9 +287,14 @@ pub fn execute(
         ExecuteMsg::UploadLogo(logo) => {
             cw20_base::contract::execute_upload_logo(deps, env, info, logo)?
         }
-        ExecuteMsg::Reedem { amount, code, memo } => {
-            execute_reedem(deps, env, info, amount, code, memo)?
-        }
+        ExecuteMsg::Reedem {
+            amount,
+            code,
+            sender,
+            memo,
+        } => execute_reedem(deps, env, info, amount, code, sender, memo)?,
+        ExecuteMsg::RemoveReedems { codes } => execute_remove_reedems(deps, env, info, codes)?,
+        ExecuteMsg::ClearReedems {} => execute_clean_reedems(deps, env, info)?,
     };
     Ok(res)
 }

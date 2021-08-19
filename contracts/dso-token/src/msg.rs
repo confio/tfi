@@ -96,9 +96,19 @@ pub enum ExecuteMsg {
         amount: Uint128,
         /// Reedem code agreed with token owner
         code: String,
+        /// Account on behalf which reedem is performed, if not set message sender is presumed
+        sender: Option<String>,
         /// Meta information about reedem
         memo: String,
     },
+    /// Removes information about reedems. Only minter may perform this, as he is
+    /// the one responsible for reedeming actions.
+    RemoveReedems {
+        /// Reedem codes to be removed
+        codes: Vec<String>,
+    },
+    /// Removes all reedems informations. Only minter may perform this.
+    ClearReedems {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -35,6 +35,7 @@ this group would be able to trade this token.
 "reedem": {
   "amount": 1000,
   "code": "reedem-code",
+  "sender": "original-requester",
   "memo": "Meta information"
 }
 ```
@@ -46,6 +47,9 @@ covers burned token value in other commodity.
 `code` field is a value agreed with token provider to perform reedem with, to
 allow him to easly identify reedem operation. Any code can be used only for single
 reedem operation.
+
+`sender` is account which requested reedem, if it is not the same who executed it.
+It is optional, and message sender is used if none is provided.
 
 `memo` is free text field where extra metadata or just message can be embeded.
 
@@ -64,6 +68,28 @@ to blockchain:
 
 To finalize off-chain reedem operation, token provider might either subscribe on
 `reedem` event, or periodically query for reedems.
+
+### RemoveReedems
+
+```json
+"remove_reedems": {
+  "codes": [
+    "reedem-code1",
+    "reedem-code2"
+  ]
+}
+```
+
+Removes stored reedems information related to provided reedem codes. Only minter
+is allowed to do that.
+
+### CleanReedems
+
+```json
+"clean_reedems" : {}
+```
+
+Removes all stored reedems information. Only minter is allowed to do that.
 
 ## New queries
 
