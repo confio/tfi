@@ -46,7 +46,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-fn verify_sender_on_whitelist(deps: &DepsMut, sender: &Addr) -> Result<(), ContractError> {
+pub(crate) fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let whitelist = WHITELIST.load(deps.storage)?;
     if whitelist.is_member(&deps.querier, sender)?.is_none() {
         return Err(ContractError::Unauthorized {});
@@ -54,8 +54,8 @@ fn verify_sender_on_whitelist(deps: &DepsMut, sender: &Addr) -> Result<(), Contr
     Ok(())
 }
 
-fn verify_sender_and_addresses_on_whitelist(
-    deps: &DepsMut,
+pub(crate) fn verify_sender_and_addresses_on_whitelist(
+    deps: Deps,
     sender: &Addr,
     addresses: &[&str],
 ) -> Result<(), ContractError> {
@@ -85,11 +85,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let res = match msg {
         ExecuteMsg::Transfer { recipient, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&recipient])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
             cw20_base::contract::execute_transfer(deps, env, info, recipient, amount)
         }
         ExecuteMsg::Burn { amount } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::contract::execute_burn(deps, env, info, amount)
         }
         ExecuteMsg::Send {
@@ -97,11 +97,11 @@ pub fn execute(
             amount,
             msg,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&contract])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&contract])?;
             cw20_base::contract::execute_send(deps, env, info, contract, amount, msg)
         }
         ExecuteMsg::Mint { recipient, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&recipient])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&recipient])?;
             cw20_base::contract::execute_mint(deps, env, info, recipient, amount)
         }
         ExecuteMsg::IncreaseAllowance {
@@ -109,7 +109,7 @@ pub fn execute(
             amount,
             expires,
         } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_increase_allowance(
                 deps, env, info, spender, amount, expires,
             )
@@ -119,7 +119,7 @@ pub fn execute(
             amount,
             expires,
         } => {
-            verify_sender_on_whitelist(&deps, &info.sender)?;
+            verify_sender_on_whitelist(deps.as_ref(), &info.sender)?;
             cw20_base::allowances::execute_decrease_allowance(
                 deps, env, info, spender, amount, expires,
             )
@@ -129,11 +129,15 @@ pub fn execute(
             recipient,
             amount,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner, &recipient])?;
+            verify_sender_and_addresses_on_whitelist(
+                deps.as_ref(),
+                &info.sender,
+                &[&owner, &recipient],
+            )?;
             cw20_base::allowances::execute_transfer_from(deps, env, info, owner, recipient, amount)
         }
         ExecuteMsg::BurnFrom { owner, amount } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner])?;
+            verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, &[&owner])?;
             cw20_base::allowances::execute_burn_from(deps, env, info, owner, amount)
         }
         ExecuteMsg::SendFrom {
@@ -142,7 +146,11 @@ pub fn execute(
             amount,
             msg,
         } => {
-            verify_sender_and_addresses_on_whitelist(&deps, &info.sender, &[&owner, &contract])?;
+            verify_sender_and_addresses_on_whitelist(
+                deps.as_ref(),
+                &info.sender,
+                &[&owner, &contract],
+            )?;
             cw20_base::allowances::execute_send_from(deps, env, info, owner, contract, amount, msg)
         }
         ExecuteMsg::UpdateMarketing {
@@ -198,5 +206,111 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{MockApi, MockStorage};
+    use cosmwasm_std::{
+        from_slice, ContractResult, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest,
+        Storage, SystemError, SystemResult, WasmQuery,
+    };
+    use cw_storage_plus::Map;
+
+    const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
+
+    struct GroupQuerier {
+        contract: String,
+        storage: MockStorage,
+    }
+
+    impl GroupQuerier {
+        pub fn new(contract: &Addr, members: &[(&Addr, u64)]) -> Self {
+            let mut storage = MockStorage::new();
+            for (member, weight) in members {
+                MEMBERS.save(&mut storage, member, weight).unwrap();
+            }
+            GroupQuerier {
+                contract: contract.to_string(),
+                storage,
+            }
+        }
+
+        fn handle_query(&self, request: QueryRequest<Empty>) -> QuerierResult {
+            match request {
+                QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
+                    self.query_wasm(contract_addr, key)
+                }
+                QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
+                    SystemResult::Err(SystemError::UnsupportedRequest {
+                        kind: "WasmQuery::Smart".to_string(),
+                    })
+                }
+                _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "not wasm".to_string(),
+                }),
+            }
+        }
+
+        // TODO: we should be able to add a custom wasm handler to MockQuerier from cosmwasm_std::mock
+        fn query_wasm(&self, contract_addr: String, key: Binary) -> QuerierResult {
+            if contract_addr != self.contract {
+                SystemResult::Err(SystemError::NoSuchContract {
+                    addr: contract_addr,
+                })
+            } else {
+                let bin = self.storage.get(&key).unwrap_or_default();
+                SystemResult::Ok(ContractResult::Ok(bin.into()))
+            }
+        }
+    }
+
+    impl Querier for GroupQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
+            let request: QueryRequest<Empty> = match from_slice(bin_request) {
+                Ok(v) => v,
+                Err(e) => {
+                    return SystemResult::Err(SystemError::InvalidRequest {
+                        error: format!("Parsing query request: {}", e),
+                        request: bin_request.into(),
+                    })
+                }
+            };
+            self.handle_query(request)
+        }
+    }
+
+    #[test]
+    // a version of multitest::whitelist_works that doesn't need multitest, App or suite
+    fn whitelist_works() {
+        let member = Addr::unchecked("member");
+        let member2 = Addr::unchecked("member2");
+        let non_member = Addr::unchecked("nonmember");
+
+        let whitelist_addr = Addr::unchecked("whitelist");
+
+        let querier = GroupQuerier::new(&whitelist_addr, &[(&member, 10), (&member2, 0)]);
+
+        // set our local data
+        let api = MockApi::default();
+        let mut storage = MockStorage::new();
+        WHITELIST
+            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .unwrap();
+        let deps = Deps {
+            storage: &storage,
+            api: &api,
+            querier: QuerierWrapper::new(&querier),
+        };
+
+        // sender whitelisted regardless of weight
+        verify_sender_on_whitelist(deps, &member).unwrap();
+        verify_sender_on_whitelist(deps, &member2).unwrap();
+        let err = verify_sender_on_whitelist(deps, &non_member).unwrap_err();
+        assert_eq!(err, ContractError::Unauthorized {});
+
+        verify_sender_and_addresses_on_whitelist(deps, &member, &[member2.as_str()]).unwrap();
     }
 }
