@@ -15,10 +15,10 @@ use cw_storage_plus::Bound;
 
 use crate::error::ContractError;
 use crate::msg::{
-    AllReedemsResponse, ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg, ReedemInfo,
-    ReedemResponse, WhitelistResponse,
+    AllRedeemsResponse, ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg, RedeemInfo,
+    RedeemResponse, WhitelistResponse,
 };
-use crate::state::{Reedem, REEDEMS, WHITELIST};
+use crate::state::{Redeem, REEDEMS, WHITELIST};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:dso-token";
@@ -85,11 +85,11 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
     Ok(())
 }
 
-/// Reedems token effectively burning them and storing information about reedem internally. This
-/// also triggers custom `reedem` event with details of process. Before reedeming, sender should
-/// make sure, that token provider is aware about such possibility and is willing to cover reedem
+/// Redeems token effectively burning them and storing information about redeem internally. This
+/// also triggers custom `redeem` event with details of process. Before redeeming, sender should
+/// make sure, that token provider is aware about such possibility and is willing to cover redeem
 /// off-chain, otherwise this may be equivalent to destrotying commodity.
-fn execute_reedem(
+fn execute_redeem(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -98,8 +98,8 @@ fn execute_reedem(
     sender: Option<String>,
     memo: String,
 ) -> Result<Response, ContractError> {
-    if REEDEMS.has(deps.storage, code.clone()) {
-        return Err(ContractError::ReedemCodeUsed {});
+    if REEDEMS.has(deps.storage, &code) {
+        return Err(ContractError::RedeemCodeUsed {});
     }
 
     if amount == Uint128::zero() {
@@ -122,8 +122,8 @@ fn execute_reedem(
 
     REEDEMS.save(
         deps.storage,
-        code.clone(),
-        &Reedem {
+        &code,
+        &Redeem {
             sender: info.sender.clone(),
             amount,
             memo: memo.clone(),
@@ -138,7 +138,7 @@ fn execute_reedem(
         info.sender.to_string()
     };
 
-    let event = Event::new("reedem")
+    let event = Event::new("redeem")
         .add_attribute("code", code)
         .add_attribute("sender", sender)
         .add_attribute("amount", amount)
@@ -146,13 +146,13 @@ fn execute_reedem(
 
     Ok(Response::new()
         .add_event(event)
-        .add_attribute("action", "reedem")
+        .add_attribute("action", "redeem")
         .add_attribute("from", info.sender)
         .add_attribute("amount", amount))
 }
 
-/// Removes info about reedems from contract, can be performed by minter only
-fn execute_remove_reedems(
+/// Removes info about redeems from contract, can be performed by minter only
+fn execute_remove_redeems(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -164,14 +164,14 @@ fn execute_remove_reedems(
     }
 
     for code in codes {
-        REEDEMS.remove(deps.storage, code);
+        REEDEMS.remove(deps.storage, &code);
     }
 
-    Ok(Response::new().add_attribute("action", "remove_reedems"))
+    Ok(Response::new().add_attribute("action", "remove_redeems"))
 }
 
-/// Removes all reedems info from contract
-fn execute_clean_reedems(
+/// Removes all redeems info from contract
+fn execute_clean_redeems(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -188,11 +188,11 @@ fn execute_clean_reedems(
     for key in keys {
         REEDEMS.remove(
             deps.storage,
-            String::from_utf8(key).map_err(StdError::from)?,
+            std::str::from_utf8(&key).map_err(StdError::from)?,
         )
     }
 
-    Ok(Response::new().add_attribute("action", "remove_all_reedems"))
+    Ok(Response::new().add_attribute("action", "remove_all_redeems"))
 }
 
 #[entry_point]
@@ -287,14 +287,14 @@ pub fn execute(
         ExecuteMsg::UploadLogo(logo) => {
             cw20_base::contract::execute_upload_logo(deps, env, info, logo)?
         }
-        ExecuteMsg::Reedem {
+        ExecuteMsg::Redeem {
             amount,
             code,
             sender,
             memo,
-        } => execute_reedem(deps, env, info, amount, code, sender, memo)?,
-        ExecuteMsg::RemoveReedems { codes } => execute_remove_reedems(deps, env, info, codes)?,
-        ExecuteMsg::ClearReedems {} => execute_clean_reedems(deps, env, info)?,
+        } => execute_redeem(deps, env, info, amount, code, sender, memo)?,
+        ExecuteMsg::RemoveRedeems { codes } => execute_remove_redeems(deps, env, info, codes)?,
+        ExecuteMsg::ClearRedeems {} => execute_clean_redeems(deps, env, info)?,
     };
     Ok(res)
 }
@@ -312,18 +312,18 @@ fn query_is_whitelisted(deps: Deps, address: String) -> StdResult<IsWhitelistedR
     Ok(IsWhitelistedResponse { whitelisted })
 }
 
-fn query_reedem(deps: Deps, code: String) -> StdResult<ReedemResponse> {
+fn query_redeem(deps: Deps, code: String) -> StdResult<RedeemResponse> {
     REEDEMS
-        .may_load(deps.storage, code)
-        .map(|reedem| ReedemResponse { reedem })
+        .may_load(deps.storage, &code)
+        .map(|redeem| RedeemResponse { redeem })
 }
 
-fn query_all_reedems(
+fn query_all_redeems(
     deps: Deps,
     start: Option<String>,
     limit: Option<u32>,
-) -> StdResult<AllReedemsResponse> {
-    let reedems = REEDEMS
+) -> StdResult<AllRedeemsResponse> {
+    let redeems = REEDEMS
         .range(
             deps.storage,
             start.map(Bound::exclusive),
@@ -331,19 +331,19 @@ fn query_all_reedems(
             Order::Ascending,
         )
         .take(limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize)
-        .map(|reedem| {
-            let (code, reedem) = reedem?;
-            Ok(ReedemInfo {
+        .map(|redeem| {
+            let (code, redeem) = redeem?;
+            Ok(RedeemInfo {
                 code: String::from_utf8(code)?,
-                sender: reedem.sender,
-                amount: reedem.amount,
-                memo: reedem.memo,
-                timestamp: reedem.timestamp,
+                sender: redeem.sender,
+                amount: redeem.amount,
+                memo: redeem.memo,
+                timestamp: redeem.timestamp,
             })
         })
         .collect::<StdResult<_>>()?;
 
-    Ok(AllReedemsResponse { reedems })
+    Ok(AllRedeemsResponse { redeems })
 }
 
 #[entry_point]
@@ -367,9 +367,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
         QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
-        QueryMsg::Reedem { code } => to_binary(&query_reedem(deps, code)?),
-        QueryMsg::AllReedems { start_after, limit } => {
-            to_binary(&query_all_reedems(deps, start_after, limit)?)
+        QueryMsg::Redeem { code } => to_binary(&query_redeem(deps, code)?),
+        QueryMsg::AllRedeems { start_after, limit } => {
+            to_binary(&query_all_redeems(deps, start_after, limit)?)
         }
     }
 }

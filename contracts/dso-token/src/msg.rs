@@ -4,7 +4,7 @@ use cw20_base::msg::InstantiateMarketingInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::Reedem;
+use crate::state::Redeem;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -83,32 +83,32 @@ pub enum ExecuteMsg {
     UploadLogo(Logo),
 
     // Non-standard messages
-    /// Reedems tokens
+    /// Redeems tokens
     ///
     /// Before calling this, there should be agreement with token provider, that equivalent is
     /// covered offchain, otherwise this is just an equivalent of burning own tokens.
     ///
-    /// This causes `reedem` event which token admin may subscribe to to finalize reedem process.
-    /// It also stores all reedems internally so it can be queried to check for reedems to be
+    /// This causes `redeem` event which token admin may subscribe to to finalize redeem process.
+    /// It also stores all redeems internally so it can be queried to check for redeems to be
     /// finalized.
-    Reedem {
-        /// Amount of tokens to be reedemed
+    Redeem {
+        /// Amount of tokens to be redeemed
         amount: Uint128,
-        /// Reedem code agreed with token owner
+        /// Redeem code agreed with token owner
         code: String,
-        /// Account on behalf which reedem is performed, if not set message sender is presumed
+        /// Account on behalf which redeem is performed, if not set message sender is presumed
         sender: Option<String>,
-        /// Meta information about reedem
+        /// Meta information about redeem
         memo: String,
     },
-    /// Removes information about reedems. Only minter may perform this, as he is
-    /// the one responsible for reedeming actions.
-    RemoveReedems {
-        /// Reedem codes to be removed
+    /// Removes information about redeems. Only minter may perform this, as he is
+    /// the one responsible for redeeming actions.
+    RemoveRedeems {
+        /// Redeem codes to be removed
         codes: Vec<String>,
     },
-    /// Removes all reedems informations. Only minter may perform this.
-    ClearReedems {},
+    /// Removes all redeems informations. Only minter may perform this.
+    ClearRedeems {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -159,17 +159,17 @@ pub enum QueryMsg {
     /// contract.
     /// Return type: DownloadLogoResponse.
     DownloadLogo {},
-    /// Get info about particular reedem
+    /// Get info about particular redeem
     ///
-    /// Return type: ReedemResponse
-    Reedem {
-        /// Code used for reedem
+    /// Return type: RedeemResponse
+    Redeem {
+        /// Code used for redeem
         code: String,
     },
-    /// Returns reedems which took place on this token
-    /// Return type: AllReedemsResponse
-    AllReedems {
-        /// Reedem code where to start reading for pagination
+    /// Returns redeems which took place on this token
+    /// Return type: AllRedeemsResponse
+    AllRedeems {
+        /// Redeem code where to start reading for pagination
         start_after: Option<String>,
         /// Maximum number of entries to return
         limit: Option<u32>,
@@ -187,25 +187,25 @@ pub struct IsWhitelistedResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ReedemInfo {
-    /// Code used for this reedem
+pub struct RedeemInfo {
+    /// Code used for this redeem
     pub code: String,
-    /// Sender which triggered reedem
+    /// Sender which triggered redeem
     pub sender: Addr,
-    /// Amount of reedemed tokens
+    /// Amount of redeemed tokens
     pub amount: Uint128,
-    /// Memo embeded in reedem message
+    /// Memo embeded in redeem message
     pub memo: String,
-    /// Timestampt when reedem took place
+    /// Timestampt when redeem took place
     pub timestamp: Timestamp,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct AllReedemsResponse {
-    pub reedems: Vec<ReedemInfo>,
+pub struct AllRedeemsResponse {
+    pub redeems: Vec<RedeemInfo>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ReedemResponse {
-    pub reedem: Option<Reedem>,
+pub struct RedeemResponse {
+    pub redeem: Option<Redeem>,
 }

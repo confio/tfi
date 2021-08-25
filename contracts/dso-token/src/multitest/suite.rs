@@ -432,7 +432,7 @@ impl Suite {
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
-                &ExecuteMsg::Reedem {
+                &ExecuteMsg::Redeem {
                     amount: amount.into(),
                     code: code.into(),
                     sender: sender.into().map(Into::into),

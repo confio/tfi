@@ -199,20 +199,20 @@
       "additionalProperties": false
     },
     {
-      "description": "Get info about particular reedem\n\nReturn type: ReedemResponse",
+      "description": "Get info about particular redeem\n\nReturn type: RedeemResponse",
       "type": "object",
       "required": [
-        "reedem"
+        "redeem"
       ],
       "properties": {
-        "reedem": {
+        "redeem": {
           "type": "object",
           "required": [
             "code"
           ],
           "properties": {
             "code": {
-              "description": "Code used for reedem",
+              "description": "Code used for redeem",
               "type": "string"
             }
           }
@@ -221,13 +221,13 @@
       "additionalProperties": false
     },
     {
-      "description": "Returns reedems which took place on this token Return type: AllReedemsResponse",
+      "description": "Returns redeems which took place on this token Return type: AllRedeemsResponse",
       "type": "object",
       "required": [
-        "all_reedems"
+        "all_redeems"
       ],
       "properties": {
-        "all_reedems": {
+        "all_redeems": {
           "type": "object",
           "properties": {
             "limit": {
@@ -240,7 +240,7 @@
               "minimum": 0.0
             },
             "start_after": {
-              "description": "Reedem code where to start reading for pagination",
+              "description": "Redeem code where to start reading for pagination",
               "type": [
                 "string",
                 "null"

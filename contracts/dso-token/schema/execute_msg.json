@@ -309,13 +309,13 @@
       "additionalProperties": false
     },
     {
-      "description": "Reedems tokens\n\nBefore calling this, there should be agreement with token provider, that equivalent is covered offchain, otherwise this is just an equivalent of burning own tokens.\n\nThis causes `reedem` event which token admin may subscribe to to finalize reedem process. It also stores all reedems internally so it can be queried to check for reedems to be finalized.",
+      "description": "Redeems tokens\n\nBefore calling this, there should be agreement with token provider, that equivalent is covered offchain, otherwise this is just an equivalent of burning own tokens.\n\nThis causes `redeem` event which token admin may subscribe to to finalize redeem process. It also stores all redeems internally so it can be queried to check for redeems to be finalized.",
       "type": "object",
       "required": [
-        "reedem"
+        "redeem"
       ],
       "properties": {
-        "reedem": {
+        "redeem": {
           "type": "object",
           "required": [
             "amount",
@@ -324,7 +324,7 @@
           ],
           "properties": {
             "amount": {
-              "description": "Amount of tokens to be reedemed",
+              "description": "Amount of tokens to be redeemed",
               "allOf": [
                 {
                   "$ref": "#/definitions/Uint128"
@@ -332,14 +332,59 @@
               ]
             },
             "code": {
-              "description": "Reedem code agreed with token owner",
+              "description": "Redeem code agreed with token owner",
               "type": "string"
             },
             "memo": {
-              "description": "Meta information about reedem",
+              "description": "Meta information about redeem",
               "type": "string"
+            },
+            "sender": {
+              "description": "Account on behalf which redeem is performed, if not set message sender is presumed",
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Removes information about redeems. Only minter may perform this, as he is the one responsible for redeeming actions.",
+      "type": "object",
+      "required": [
+        "remove_redeems"
+      ],
+      "properties": {
+        "remove_redeems": {
+          "type": "object",
+          "required": [
+            "codes"
+          ],
+          "properties": {
+            "codes": {
+              "description": "Redeem codes to be removed",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Removes all redeems informations. Only minter may perform this.",
+      "type": "object",
+      "required": [
+        "clear_redeems"
+      ],
+      "properties": {
+        "clear_redeems": {
+          "type": "object"
         }
       },
       "additionalProperties": false

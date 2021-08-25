@@ -12,6 +12,6 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Reedem code already used")]
-    ReedemCodeUsed {},
+    #[error("Redeem code already used")]
+    RedeemCodeUsed {},
 }
