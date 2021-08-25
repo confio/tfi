@@ -541,11 +541,7 @@ fn redeem() {
         .unwrap();
 
     assert!(
-        suite
-            .events
-            .iter()
-            .find(|&ev| ev.ty == "wasm-reedem")
-            .is_some(),
+        suite.events.iter().any(|ev| ev.ty == "wasm-reedem"),
         "No redeem event: {:?}",
         suite.events
     );
@@ -561,11 +557,7 @@ fn redeem() {
         .unwrap();
 
     assert!(
-        suite
-            .events
-            .iter()
-            .find(|&ev| ev.ty == "wasm-reedem")
-            .is_some(),
+        suite.events.iter().any(|ev| ev.ty == "wasm-reedem"),
         "No redeem event: {:?}",
         suite.events
     );
