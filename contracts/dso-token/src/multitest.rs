@@ -524,3 +524,51 @@ fn whitelist() {
         .unwrap();
     assert!(!is_whitelisted.whitelisted);
 }
+
+#[test]
+fn redeem() {
+    let mut suite = suite::Config::new()
+        .with_member("member", 2000, 10)
+        .init()
+        .unwrap();
+
+    let member = suite.members[0].clone();
+
+    // member obviously can redeem funds
+    suite.events.clear();
+    suite
+        .redeem(&member, 1000, "redeem-code-1", None, "First redeem")
+        .unwrap();
+
+    assert!(
+        suite
+            .events
+            .iter()
+            .find(|&ev| ev.ty == "wasm-reedem")
+            .is_some(),
+        "No redeem event: {:?}",
+        suite.events
+    );
+    assert_eq!(suite.balance(&member).unwrap(), 1000);
+    assert_eq!(suite.total_supply().unwrap(), 1000);
+
+    // members still can redeem after he is removed from whitelist
+    suite.events.clear();
+    suite
+        .remove_member(&member)
+        .unwrap()
+        .redeem(&member, 1000, "redeem-code-2", None, "Second redeem")
+        .unwrap();
+
+    assert!(
+        suite
+            .events
+            .iter()
+            .find(|&ev| ev.ty == "wasm-reedem")
+            .is_some(),
+        "No redeem event: {:?}",
+        suite.events
+    );
+    assert_eq!(suite.balance(&member).unwrap(), 0);
+    assert_eq!(suite.total_supply().unwrap(), 0);
+}

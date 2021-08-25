@@ -377,11 +377,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{MockApi, MockStorage};
+    use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage};
     use cosmwasm_std::{
-        from_slice, ContractResult, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest,
-        Storage, SystemError, SystemResult, WasmQuery,
+        from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QuerierWrapper,
+        QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
+    use cw20::Cw20Coin;
     use cw_storage_plus::Map;
 
     const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);

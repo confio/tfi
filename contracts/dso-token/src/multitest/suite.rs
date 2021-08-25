@@ -1,7 +1,7 @@
 use cw20_base::msg::InstantiateMarketingInfo;
 
 use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
-use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Empty, Event, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw4::{Cw4Contract, Member};
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
@@ -150,13 +150,16 @@ pub struct Suite {
     pub whitelist: Cw4Contract,
     /// dso-token cash contract address
     pub cash: Cw20Contract,
+    /// events collected from executions, for verifiaction purposes
+    pub events: Vec<Event>,
 }
 
 /// Utility functions sending messages to execute contracts.
 impl Suite {
     /// Adds member to whitelist
     pub fn add_member(&mut self, addr: &Addr, weight: u64) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
@@ -171,12 +174,15 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
     /// Removes member from whitelist
     pub fn remove_member(&mut self, addr: &Addr) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
@@ -188,6 +194,8 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
@@ -198,7 +206,8 @@ impl Suite {
         recipient: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -210,12 +219,15 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
     /// Executes burn on `cash` contract
     pub fn burn(&mut self, executor: &Addr, amount: u128) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -225,6 +237,8 @@ impl Suite {
                 &[],
             )
             .map_err(|err| anyhow!(err))?;
+
+        self.events.extend(resp.events);
 
         Ok(self)
     }
@@ -237,7 +251,8 @@ impl Suite {
         amount: u128,
         msg: impl Into<Binary>,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -250,12 +265,15 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
     /// Executes mint on `cash` contract
     pub fn mint(&mut self, executor: &Addr, recipient: &Addr, amount: u128) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -267,6 +285,8 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
@@ -277,7 +297,8 @@ impl Suite {
         spender: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -290,6 +311,8 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
@@ -300,7 +323,8 @@ impl Suite {
         spender: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -313,6 +337,8 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
@@ -324,7 +350,8 @@ impl Suite {
         recipient: &Addr,
         amount: u128,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -337,12 +364,15 @@ impl Suite {
             )
             .map_err(|err| anyhow!(err))?;
 
+        self.events.extend(resp.events);
+
         Ok(self)
     }
 
     /// Executes burn from on `cash` contract
     pub fn burn_from(&mut self, executor: &Addr, owner: &Addr, amount: u128) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -353,6 +383,8 @@ impl Suite {
                 &[],
             )
             .map_err(|err| anyhow!(err))?;
+
+        self.events.extend(resp.events);
 
         Ok(self)
     }
@@ -366,7 +398,8 @@ impl Suite {
         amount: u128,
         msg: impl Into<Binary>,
     ) -> Result<&mut Self> {
-        self.app
+        let resp = self
+            .app
             .execute_contract(
                 executor.clone(),
                 self.cash.addr(),
@@ -379,6 +412,37 @@ impl Suite {
                 &[],
             )
             .map_err(|err| anyhow!(err))?;
+
+        self.events.extend(resp.events);
+
+        Ok(self)
+    }
+
+    /// Executes redeem on `cash`
+    pub fn redeem(
+        &mut self,
+        executor: &Addr,
+        amount: u128,
+        code: impl Into<String>,
+        sender: impl Into<Option<String>>,
+        memo: impl Into<String>,
+    ) -> Result<&mut Self> {
+        let resp = self
+            .app
+            .execute_contract(
+                executor.clone(),
+                self.cash.addr(),
+                &ExecuteMsg::Reedem {
+                    amount: amount.into(),
+                    code: code.into(),
+                    sender: sender.into().map(Into::into),
+                    memo: memo.into(),
+                },
+                &[],
+            )
+            .map_err(|err| anyhow!(err))?;
+
+        self.events.extend(resp.events);
 
         Ok(self)
     }
@@ -528,6 +592,7 @@ impl Config {
             minter,
             whitelist: Cw4Contract(whitelist),
             cash: Cw20Contract(cash),
+            events: Vec::new(),
         })
     }
 }

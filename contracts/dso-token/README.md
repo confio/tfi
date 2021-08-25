@@ -33,7 +33,7 @@ this group would be able to trade this token.
 
 ```json
 "reedem": {
-  "amount": 1000,
+  "amount": "1000",
   "code": "reedem-code",
   "sender": "original-requester",
   "memo": "Meta information"
@@ -107,7 +107,7 @@ Returns:
 "ReedemResponse": {
   "reedem": {
     "sender": "addr-performed-reedem",
-    "amount": 1000,
+    "amount": "1000",
     "memo": "Meta information",
     "timestamp": 1629292639
   }
@@ -137,7 +137,7 @@ Returns:
     {
       "code": "reedem-code",
       "sender": "addr-performed-reedem",
-      "amount": 1000,
+      "amount": "1000",
       "memo": "Meta information",
       "timestamp": 1629292639
     }
