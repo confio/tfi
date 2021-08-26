@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
-    StdError, StdResult, Uint128,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::allowances::query_allowance;
@@ -110,10 +110,14 @@ fn execute_redeem(
     BALANCES.update(
         deps.storage,
         &info.sender,
-        |balance: Option<Uint128>| -> StdResult<_> {
-            Ok(balance.unwrap_or_default().checked_sub(amount)?)
+        |balance: Option<Uint128>| -> Result<_, ContractError> {
+            let balance = balance.unwrap_or_default();
+            balance
+                .checked_sub(amount)
+                .map_err(|_| ContractError::RedeemOverBalance(balance))
         },
     )?;
+
     // reduce total_supply
     TOKEN_INFO.update(deps.storage, |mut info| -> StdResult<_> {
         info.total_supply = info.total_supply.checked_sub(amount)?;
@@ -186,10 +190,7 @@ fn execute_clean_redeems(
         .collect();
 
     for key in keys {
-        REEDEMS.remove(
-            deps.storage,
-            std::str::from_utf8(&key).map_err(StdError::from)?,
-        )
+        REEDEMS.remove(deps.storage, std::str::from_utf8(&key)?)
     }
 
     Ok(Response::new().add_attribute("action", "remove_all_redeems"))
@@ -377,11 +378,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{MockApi, MockStorage};
+    use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage};
     use cosmwasm_std::{
-        from_slice, ContractResult, Empty, Querier, QuerierResult, QuerierWrapper, QueryRequest,
-        Storage, SystemError, SystemResult, WasmQuery,
+        from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QuerierWrapper,
+        QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
+    use cw20_base::state::TokenInfo;
     use cw_storage_plus::Map;
 
     const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
@@ -477,5 +479,168 @@ mod tests {
         assert_eq!(err, ContractError::Unauthorized {});
 
         verify_sender_and_addresses_on_whitelist(deps, &member, &[member2.as_str()]).unwrap();
+    }
+
+    #[test]
+    fn redeem_over_balance() {
+        let trader = Addr::unchecked("trader");
+        let whitelist_addr = Addr::unchecked("whitelist");
+
+        let querier = GroupQuerier::new(&whitelist_addr, &[]);
+
+        // set our local data
+        let api = MockApi::default();
+        let mut storage = MockStorage::new();
+
+        WHITELIST
+            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .unwrap();
+
+        let mut deps = OwnedDeps {
+            storage,
+            api,
+            querier,
+        };
+
+        BALANCES
+            .save(&mut deps.storage, &trader, &Uint128::new(100))
+            .unwrap();
+
+        TOKEN_INFO
+            .save(
+                &mut deps.storage,
+                &TokenInfo {
+                    name: "Token".to_owned(),
+                    symbol: "TKN".to_owned(),
+                    decimals: 4,
+                    total_supply: Uint128::new(100),
+                    mint: None,
+                },
+            )
+            .unwrap();
+
+        let err = execute_redeem(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(&trader.to_string(), &[]),
+            Uint128::new(500),
+            "redeem-code".to_owned(),
+            None,
+            "Redeem description".to_owned(),
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::RedeemOverBalance(Uint128::new(100)), err);
+    }
+
+    #[test]
+    fn redeem_empty_account() {
+        let trader = Addr::unchecked("trader");
+        let whitelist_addr = Addr::unchecked("whitelist");
+
+        let querier = GroupQuerier::new(&whitelist_addr, &[]);
+
+        // set our local data
+        let api = MockApi::default();
+        let mut storage = MockStorage::new();
+
+        WHITELIST
+            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .unwrap();
+
+        let mut deps = OwnedDeps {
+            storage,
+            api,
+            querier,
+        };
+
+        TOKEN_INFO
+            .save(
+                &mut deps.storage,
+                &TokenInfo {
+                    name: "Token".to_owned(),
+                    symbol: "TKN".to_owned(),
+                    decimals: 4,
+                    total_supply: Uint128::zero(),
+                    mint: None,
+                },
+            )
+            .unwrap();
+
+        let err = execute_redeem(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(&trader.to_string(), &[]),
+            Uint128::new(500),
+            "redeem-code".to_owned(),
+            None,
+            "Redeem description".to_owned(),
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::RedeemOverBalance(Uint128::new(0)), err);
+    }
+
+    #[test]
+    fn redeem_already_used_code() {
+        let trader = Addr::unchecked("trader");
+        let whitelist_addr = Addr::unchecked("whitelist");
+
+        let querier = GroupQuerier::new(&whitelist_addr, &[]);
+
+        // set our local data
+        let api = MockApi::default();
+        let mut storage = MockStorage::new();
+
+        WHITELIST
+            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .unwrap();
+
+        let mut deps = OwnedDeps {
+            storage,
+            api,
+            querier,
+        };
+
+        BALANCES
+            .save(&mut deps.storage, &trader, &Uint128::new(100))
+            .unwrap();
+
+        TOKEN_INFO
+            .save(
+                &mut deps.storage,
+                &TokenInfo {
+                    name: "Token".to_owned(),
+                    symbol: "TKN".to_owned(),
+                    decimals: 4,
+                    total_supply: Uint128::new(100),
+                    mint: None,
+                },
+            )
+            .unwrap();
+
+        execute_redeem(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(&trader.to_string(), &[]),
+            Uint128::new(50),
+            "redeem-code".to_owned(),
+            None,
+            "Redeem description".to_owned(),
+        )
+        .unwrap();
+
+        let err = execute_redeem(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(&trader.to_string(), &[]),
+            Uint128::new(30),
+            "redeem-code".to_owned(),
+            None,
+            "Another redeem description".to_owned(),
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::RedeemCodeUsed {}, err);
     }
 }

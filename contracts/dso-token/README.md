@@ -32,11 +32,13 @@ this group would be able to trade this token.
 ### Redeem
 
 ```json
-"redeem": {
-  "amount": "1000",
-  "code": "redeem-code",
-  "sender": "original-requester",
-  "memo": "Meta information"
+{
+  "redeem": {
+    "amount": "1000",
+    "code": "redeem-code",
+    "sender": "original-requester",
+    "memo": "Meta information"
+  }
 }
 ```
 
@@ -58,11 +60,13 @@ state, so it can be later queried by token provider. Also custom event is send
 to blockchain:
 
 ```json
-"redeem": {
-  "code": "redeem-code",
-  "sender": "addr-performing-redeem",
-  "amount": "1000",
-  "memo": "Meta information"
+{
+  "redeem": {
+    "code": "redeem-code",
+    "sender": "addr-performing-redeem",
+    "amount": "1000",
+    "memo": "Meta information"
+  }
 }
 ```
 
@@ -72,11 +76,13 @@ To finalize off-chain redeem operation, token provider might either subscribe on
 ### RemoveRedeems
 
 ```json
-"remove_redeems": {
-  "codes": [
-    "redeem-code1",
-    "redeem-code2"
-  ]
+{
+  "remove_redeems": {
+    "codes": [
+      "redeem-code1",
+      "redeem-code2"
+    ]
+  }
 }
 ```
 
@@ -86,7 +92,7 @@ is allowed to do that.
 ### CleanRedeems
 
 ```json
-"clean_redeems" : {}
+{ "clean_redeems" : {} }
 ```
 
 Removes all stored redeems information. Only minter is allowed to do that.
@@ -96,20 +102,24 @@ Removes all stored redeems information. Only minter is allowed to do that.
 ### Query for single redeem
 
 ```json
-"redeem": {
-  "code": "redeem-code"
+{
+  "redeem": {
+    "code": "redeem-code"
+  }
 }
 ```
 
 Returns:
 
 ```json
-"RedeemResponse": {
-  "redeem": {
-    "sender": "addr-performed-redeem",
-    "amount": "1000",
-    "memo": "Meta information",
-    "timestamp": 1629292639
+{
+  "RedeemResponse": {
+    "redeem": {
+      "sender": "addr-performed-redeem",
+      "amount": "1000",
+      "memo": "Meta information",
+      "timestamp": 1629292639
+    }
   }
 }
 ```
@@ -123,25 +133,29 @@ redeem was performed with this code.
 ### Query for all redeems
 
 ```json
-"all_redeems": {
-  "start_after": "last-read-redeem",
-  "limit": 10
+{
+  "all_redeems": {
+    "start_after": "last-read-redeem",
+    "limit": 10
+  }
 }
 ```
 
 Returns:
 
 ```json
-"AllRedeemsResponse": {
-  "redeems": [
-    {
-      "code": "redeem-code",
-      "sender": "addr-performed-redeem",
-      "amount": "1000",
-      "memo": "Meta information",
-      "timestamp": 1629292639
-    }
-  ]
+{
+  "AllRedeemsResponse": {
+    "redeems": [
+      {
+        "code": "redeem-code",
+        "sender": "addr-performed-redeem",
+        "amount": "1000",
+        "memo": "Meta information",
+        "timestamp": 1629292639
+      }
+    ]
+  }
 }
 ```
 
