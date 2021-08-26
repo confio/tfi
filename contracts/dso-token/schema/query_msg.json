@@ -197,6 +197,59 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Get info about particular redeem\n\nReturn type: RedeemResponse",
+      "type": "object",
+      "required": [
+        "redeem"
+      ],
+      "properties": {
+        "redeem": {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "description": "Code used for redeem",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns redeems which took place on this token Return type: AllRedeemsResponse",
+      "type": "object",
+      "required": [
+        "all_redeems"
+      ],
+      "properties": {
+        "all_redeems": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximum number of entries to return",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "description": "Redeem code where to start reading for pagination",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

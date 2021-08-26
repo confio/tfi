@@ -1,6 +1,6 @@
 mod suite;
 
-use cosmwasm_std::{Addr, Deps, Uint128};
+use cosmwasm_std::{Addr, Deps, Event, Uint128};
 use cw20::{Cw20ReceiveMsg, TokenInfoResponse};
 
 use crate::contract::{verify_sender_and_addresses_on_whitelist, verify_sender_on_whitelist};
@@ -89,11 +89,8 @@ fn burn() {
     assert_eq!(suite.total_supply().unwrap(), 500);
 
     // non whitelisted can't burn tokens
-    let err = suite
-        .remove_member(&member)
-        .unwrap()
-        .burn(&member, 500)
-        .unwrap_err();
+    suite.remove_member(&member).unwrap();
+    let err = suite.burn(&member, 500).unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.balance(&member).unwrap(), 500);
@@ -156,9 +153,8 @@ fn send() {
     assert_eq!(receiver.messages(&suite.app).unwrap(), vec![]);
 
     // send to whitelisted address works
+    suite.add_member(&receiver.addr(), 10).unwrap();
     suite
-        .add_member(&receiver.addr(), 10)
-        .unwrap()
         .send(&member, &receiver.addr(), 500, "'msg2'".as_bytes())
         .unwrap();
 
@@ -174,9 +170,8 @@ fn send() {
     );
 
     // sned by non-whitelisted owner fails
+    suite.remove_member(&member).unwrap();
     let err = suite
-        .remove_member(&member)
-        .unwrap()
         .send(&member, &receiver.addr(), 500, "msg3".as_bytes())
         .unwrap_err();
 
@@ -209,11 +204,8 @@ fn mint() {
     assert_eq!(suite.total_supply().unwrap(), 0);
 
     // mint by whitelisted minter to whitelisted member works
-    suite
-        .add_member(&minter, 20)
-        .unwrap()
-        .mint(&minter, &member, 500)
-        .unwrap();
+    suite.add_member(&minter, 20).unwrap();
+    suite.mint(&minter, &member, 500).unwrap();
     assert_eq!(suite.balance(&member).unwrap(), 500);
     assert_eq!(suite.total_supply().unwrap(), 500);
 
@@ -238,9 +230,8 @@ fn increase_allowance() {
     assert_eq!(suite.allowance(&member1, &member2).unwrap(), 500);
 
     // non whitelisted can't increase allowance
+    suite.remove_member(&member1).unwrap();
     let err = suite
-        .remove_member(&member1)
-        .unwrap()
         .increase_allowance(&member1, &member2, 500)
         .unwrap_err();
 
@@ -265,9 +256,8 @@ fn decrease_allowance() {
     assert_eq!(suite.allowance(&member1, &member2).unwrap(), 500);
 
     // non whitelisted can't decrease allowance
+    suite.remove_member(&member1).unwrap();
     let err = suite
-        .remove_member(&member1)
-        .unwrap()
         .decrease_allowance(&member1, &member2, 500)
         .unwrap_err();
 
@@ -291,9 +281,8 @@ fn transfer_from() {
     let non_member = Addr::unchecked("non-member");
 
     // setup allowance
+    suite.increase_allowance(&member, &spender, 1000).unwrap();
     suite
-        .increase_allowance(&member, &spender, 1000)
-        .unwrap()
         .increase_allowance(&member, &non_member, 1000)
         .unwrap();
 
@@ -327,9 +316,8 @@ fn transfer_from() {
     assert_eq!(suite.allowance(&member, &non_member).unwrap(), 1000);
 
     // send by non-whitelisted allowed address fails
+    suite.remove_member(&member).unwrap();
     let err = suite
-        .remove_member(&member)
-        .unwrap()
         .transfer_from(&spender, &member, &receiver, 500)
         .unwrap_err();
 
@@ -350,9 +338,8 @@ fn burn_from() {
     let non_member = Addr::unchecked("non-member");
 
     // setup allowances
+    suite.increase_allowance(&member, &spender, 1000).unwrap();
     suite
-        .increase_allowance(&member, &spender, 1000)
-        .unwrap()
         .increase_allowance(&member, &non_member, 1000)
         .unwrap();
 
@@ -372,11 +359,8 @@ fn burn_from() {
     assert_eq!(suite.total_supply().unwrap(), 1500);
 
     // cannot burn tokens from non-whitelisted account
-    let err = suite
-        .remove_member(&member)
-        .unwrap()
-        .burn_from(&spender, &member, 500)
-        .unwrap_err();
+    suite.remove_member(&member).unwrap();
+    let err = suite.burn_from(&spender, &member, 500).unwrap_err();
 
     assert_error(err, ContractError::Unauthorized {});
     assert_eq!(suite.balance(&member).unwrap(), 1500);
@@ -400,11 +384,8 @@ fn send_from() {
     let receiver = suite::ReceiverContract::init(&mut suite.app, suite.owner.clone()).unwrap();
 
     // Set up allowances
-    suite
-        .increase_allowance(&member, &spender, 500)
-        .unwrap()
-        .increase_allowance(&member, &non_member, 500)
-        .unwrap();
+    suite.increase_allowance(&member, &spender, 500).unwrap();
+    suite.increase_allowance(&member, &non_member, 500).unwrap();
 
     // send to non-whitelisted address fails
     let err = suite
@@ -418,9 +399,8 @@ fn send_from() {
     assert_eq!(receiver.messages(&suite.app).unwrap(), vec![]);
 
     // send when all whitelisted works
+    suite.add_member(&receiver.addr(), 10).unwrap();
     suite
-        .add_member(&receiver.addr(), 10)
-        .unwrap()
         .send_from(
             &spender,
             &member,
@@ -467,9 +447,8 @@ fn send_from() {
     );
 
     // send from non-whitelisted owner fails
+    suite.remove_member(&member).unwrap();
     let err = suite
-        .remove_member(&member)
-        .unwrap()
         .send_from(&spender, &member, &receiver.addr(), 500, "msg3".as_bytes())
         .unwrap_err();
 
@@ -523,4 +502,75 @@ fn whitelist() {
         )
         .unwrap();
     assert!(!is_whitelisted.whitelisted);
+}
+
+fn redeem_event(code: &str, sender: &str, amount: u128, memo: &str) -> Event {
+    Event::new("wasm-redeem")
+        .add_attribute("code", code)
+        .add_attribute("sender", sender)
+        .add_attribute("amount", amount.to_string())
+        .add_attribute("memo", memo)
+}
+
+#[track_caller]
+fn assert_event(received: &[Event], expected: &Event) {
+    let found = received.iter().any(|ev| {
+        expected.ty == ev.ty
+            && expected
+                .attributes
+                .iter()
+                .all(|at| ev.attributes.contains(at))
+    });
+
+    assert!(
+        found,
+        "Expected to find an event {:?}, but receiveed: {:?}",
+        expected, received
+    );
+}
+
+#[test]
+fn redeem() {
+    let mut suite = suite::Config::new()
+        .with_member("member", 2000, 10)
+        .init()
+        .unwrap();
+
+    let member = suite.members[0].clone();
+
+    // member obviously can redeem funds
+    let resp = suite
+        .redeem(&member, 1000, "redeem-code-1", None, "First redeem")
+        .unwrap();
+
+    assert_event(
+        &resp.events,
+        &redeem_event("redeem-code-1", &member.to_string(), 1000, "First redeem"),
+    );
+    assert!(
+        resp.events.iter().any(|ev| ev.ty == "wasm-redeem"),
+        "No redeem event in response: {:?}",
+        resp
+    );
+    assert_eq!(suite.balance(&member).unwrap(), 1000);
+    assert_eq!(suite.total_supply().unwrap(), 1000);
+
+    // members still can redeem after he is removed from whitelist
+    suite.remove_member(&member).unwrap();
+    let resp = suite
+        .redeem(
+            &member,
+            500,
+            "redeem-code-2",
+            "receiver".to_owned(),
+            "Second redeem",
+        )
+        .unwrap();
+
+    assert_event(
+        &resp.events,
+        &redeem_event("redeem-code-2", "receiver", 500, "Second redeem"),
+    );
+    assert_eq!(suite.balance(&member).unwrap(), 500);
+    assert_eq!(suite.total_supply().unwrap(), 500);
 }

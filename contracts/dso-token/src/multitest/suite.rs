@@ -5,7 +5,7 @@ use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw4::{Cw4Contract, Member};
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
-use cw_multi_test::{App, BankKeeper, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppResponse, BankKeeper, Contract, ContractWrapper, Executor};
 
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
@@ -155,7 +155,7 @@ pub struct Suite {
 /// Utility functions sending messages to execute contracts.
 impl Suite {
     /// Adds member to whitelist
-    pub fn add_member(&mut self, addr: &Addr, weight: u64) -> Result<&mut Self> {
+    pub fn add_member(&mut self, addr: &Addr, weight: u64) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 self.owner.clone(),
@@ -169,13 +169,11 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Removes member from whitelist
-    pub fn remove_member(&mut self, addr: &Addr) -> Result<&mut Self> {
+    pub fn remove_member(&mut self, addr: &Addr) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 self.owner.clone(),
@@ -186,9 +184,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes transfer on `cash` contract
@@ -197,7 +193,7 @@ impl Suite {
         executor: &Addr,
         recipient: &Addr,
         amount: u128,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -208,13 +204,11 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes burn on `cash` contract
-    pub fn burn(&mut self, executor: &Addr, amount: u128) -> Result<&mut Self> {
+    pub fn burn(&mut self, executor: &Addr, amount: u128) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -224,9 +218,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes send on `cash` contract
@@ -236,7 +228,7 @@ impl Suite {
         recipient: &Addr,
         amount: u128,
         msg: impl Into<Binary>,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -248,13 +240,11 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes mint on `cash` contract
-    pub fn mint(&mut self, executor: &Addr, recipient: &Addr, amount: u128) -> Result<&mut Self> {
+    pub fn mint(&mut self, executor: &Addr, recipient: &Addr, amount: u128) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -265,9 +255,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes increasing allowance on `cash` contract
@@ -276,7 +264,7 @@ impl Suite {
         executor: &Addr,
         spender: &Addr,
         amount: u128,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -288,9 +276,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes decreasing allowance on `cash` contract
@@ -299,7 +285,7 @@ impl Suite {
         executor: &Addr,
         spender: &Addr,
         amount: u128,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -311,9 +297,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes transfer from on `cash` contract
@@ -323,7 +307,7 @@ impl Suite {
         owner: &Addr,
         recipient: &Addr,
         amount: u128,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -335,13 +319,16 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes burn from on `cash` contract
-    pub fn burn_from(&mut self, executor: &Addr, owner: &Addr, amount: u128) -> Result<&mut Self> {
+    pub fn burn_from(
+        &mut self,
+        executor: &Addr,
+        owner: &Addr,
+        amount: u128,
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -352,9 +339,7 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
-
-        Ok(self)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Executes send from on `cash` contract
@@ -365,7 +350,7 @@ impl Suite {
         recipient: &Addr,
         amount: u128,
         msg: impl Into<Binary>,
-    ) -> Result<&mut Self> {
+    ) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 executor.clone(),
@@ -378,9 +363,31 @@ impl Suite {
                 },
                 &[],
             )
-            .map_err(|err| anyhow!(err))?;
+            .map_err(|err| anyhow!(err))
+    }
 
-        Ok(self)
+    /// Executes redeem on `cash`
+    pub fn redeem(
+        &mut self,
+        executor: &Addr,
+        amount: u128,
+        code: impl Into<String>,
+        sender: impl Into<Option<String>>,
+        memo: impl Into<String>,
+    ) -> Result<AppResponse> {
+        self.app
+            .execute_contract(
+                executor.clone(),
+                self.cash.addr(),
+                &ExecuteMsg::Redeem {
+                    amount: amount.into(),
+                    code: code.into(),
+                    sender: sender.into().map(Into::into),
+                    memo: memo.into(),
+                },
+                &[],
+            )
+            .map_err(|err| anyhow!(err))
     }
 
     /// Return cash contract metadata
