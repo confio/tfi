@@ -33,6 +33,6 @@ thiserror = { version = "1.0.24" }
 [dev-dependencies]
 anyhow = "1"
 cosmwasm-schema = { version = "0.16.0" }
-cw-multi-test = "0.8.0"
+cw-multi-test = "0.8.1"
 cw4-group = "0.8.0"
 derivative = "2"

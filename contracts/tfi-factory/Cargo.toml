@@ -35,7 +35,7 @@ thiserror = "1"
 cosmwasm-schema = "0.16.0"
 cosmwasm-storage = { version = "0.16.0", features = ["iterator"] }
 anyhow = { version = "1", features = ["backtrace"] }
-cw-multi-test = "0.8.0"
+cw-multi-test = "0.8.1"
 tfi-pair = { path = "../tfi-pair", version = "0.1" }
 dso-token = { path = "../dso-token", version = "0.1" }
 derivative = "2"
