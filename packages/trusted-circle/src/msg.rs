@@ -55,7 +55,6 @@ pub enum ExecuteMsg {
     CheckPending {},
 }
 
-// TODO: expose batch query
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -174,13 +173,6 @@ pub struct VoteResponse {
 pub struct Escrow {
     pub addr: String,
     pub escrow_status: EscrowStatus,
-}
-
-#[cfg(test)]
-impl Escrow {
-    pub fn cmp_by_addr(left: &Escrow, right: &Escrow) -> std::cmp::Ordering {
-        left.addr.cmp(&right.addr)
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
