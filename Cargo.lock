@@ -296,6 +296,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw3"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "078acdb1876c5c73b443f394f5eb7bbb998b56452836a2545d92ab01d4cb5a9b"
+dependencies = [
+ "cosmwasm-std",
+ "cw0",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cw4"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -892,6 +904,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "trusted-circle"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw0",
+ "cw3",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
