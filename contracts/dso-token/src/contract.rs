@@ -48,16 +48,16 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
-    let contract = Cw4Contract(addr);
+    let contract = Cw4Contract(addr.clone());
     // verify the whitelist contract is actually cw4
-    let members = contract.list_members(&deps.querier, None, Some(1))?;
+    contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
 
     let event = Event::new("create_token")
         .add_attribute("name", msg.name)
         .add_attribute("symbol", msg.symbol)
         .add_attribute("decimal", msg.decimals.to_string())
-        .add_attribute("allow_group", members[0].addr.clone());
+        .add_attribute("allow_group", addr.to_string());
     Ok(Response::default().add_event(event))
 }
 
@@ -647,5 +647,45 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(ContractError::RedeemCodeUsed {}, err);
+    }
+
+    #[test]
+    fn instantiate_event() {
+        let name = "Liquid Gold".to_string();
+        let symbol = "GOLD".to_string();
+        let decimals = 6;
+        let whitelist_group = "tgrade123456789".to_string();
+        let instantiate_msg = InstantiateMsg {
+            name: name.clone(),
+            symbol: symbol.clone(),
+            decimals,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+            whitelist_group: whitelist_group.clone(),
+        };
+
+        let whitelist_addr = Addr::unchecked("whitelist");
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: GroupQuerier::new(&whitelist_addr, &[]),
+        };
+
+        let info = MessageInfo {
+            sender: Addr::unchecked("SENDER"),
+            funds: vec![],
+        };
+
+        assert_eq!(
+            instantiate(deps.as_mut(), mock_env(), info, instantiate_msg),
+            Ok(Response::new().add_event(
+                Event::new("create_token")
+                    .add_attribute("name", name)
+                    .add_attribute("symbol", symbol)
+                    .add_attribute("decimal", decimals.to_string())
+                    .add_attribute("allow_group", whitelist_group)
+            ))
+        );
     }
 }
