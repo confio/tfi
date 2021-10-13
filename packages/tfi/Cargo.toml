@@ -16,13 +16,13 @@ homepage = "https://tgrade.finance"
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cw20 = { version = "0.8.0-rc1" }
-cosmwasm-storage = { version = "0.16.0" }
-cosmwasm-std = { version = "0.16.0" }
+cw20 = "=0.10"
+cosmwasm-storage = "=1.0.0-beta"
+cosmwasm-std = "=1.0.0-beta"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
-cosmwasm-schema = "0.16.0"
+cosmwasm-schema = "=1.0.0-beta"
 tfi-mocks = { path = "../mocks", version = "0.1.0" }
 

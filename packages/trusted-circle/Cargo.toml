@@ -16,12 +16,12 @@ homepage = "https://tgrade.finance"
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = { version = "0.16.0" }
+cosmwasm-std = "=1.0.0-beta"
 schemars = "0.8.1"
-cw0 = "0.8"
-cw3 = "0.8"
+cw0 = "=0.10"
+cw3 = "=0.10"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
-cosmwasm-schema = "0.16.0"
+cosmwasm-schema = "=1.0.0-beta"
 
