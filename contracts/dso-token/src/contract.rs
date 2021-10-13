@@ -37,8 +37,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let cw20_msg = cw20_base::msg::InstantiateMsg {
-        name: msg.name,
-        symbol: msg.symbol,
+        name: msg.name.clone(),
+        symbol: msg.symbol.clone(),
         decimals: msg.decimals,
         initial_balances: msg.initial_balances,
         mint: msg.mint,
@@ -50,10 +50,15 @@ pub fn instantiate(
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
     let contract = Cw4Contract(addr);
     // verify the whitelist contract is actually cw4
-    contract.list_members(&deps.querier, None, Some(1))?;
+    let members = contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
 
-    Ok(Response::default())
+    let event = Event::new("create_token")
+        .add_attribute("name", msg.name)
+        .add_attribute("symbol", msg.symbol)
+        .add_attribute("decimal", msg.decimals.to_string())
+        .add_attribute("allow_group", members[0].addr.clone());
+    Ok(Response::default().add_event(event))
 }
 
 pub(crate) fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
@@ -74,7 +79,7 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
         return Err(ContractError::Unauthorized {});
     }
     for address in addresses {
-        let validated_address = deps.api.addr_validate(&address)?;
+        let validated_address = deps.api.addr_validate(address)?;
         if whitelist
             .is_member(&deps.querier, &validated_address)?
             .is_none()
