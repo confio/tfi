@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
-use cosmwasm_std::{coin, coins, to_binary, Addr, Decimal, Empty, StdError, Uint128};
+use cosmwasm_std::{coin, coins, to_binary, Addr, BankMsg, Decimal, Empty, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
 use crate::error::ContractError;
@@ -11,8 +11,20 @@ use tfi::pair::{
     SimulationResponse,
 };
 
+const FEDERAL_RESERVE: &str = "reserve";
+const DENOM: &str = "btc";
+
 fn mock_app() -> App {
-    App::default()
+    AppBuilder::new_custom().build(|router, _, storage| {
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked(FEDERAL_RESERVE),
+                coins(100000, DENOM),
+            )
+            .unwrap();
+    })
 }
 
 pub fn contract_pair() -> Box<dyn Contract<Empty>> {
@@ -374,8 +386,15 @@ impl SuiteConfig {
         let pairs = actors
             .into_iter()
             .map(|lp| -> Result<_> {
-                app.init_bank_balance(&lp.addr, coins(lp.btc, "btc"))
-                    .map_err(|err| anyhow!(err))?;
+                app.execute(
+                    Addr::unchecked(FEDERAL_RESERVE),
+                    BankMsg::Send {
+                        to_address: lp.addr.to_string(),
+                        amount: coins(lp.btc, DENOM),
+                    }
+                    .into(),
+                )
+                .unwrap();
 
                 let cash = Cw20Coin {
                     address: lp.addr.to_string(),
@@ -466,8 +485,16 @@ fn setup_liquidity_pool() {
 
     // set personal balance
     let owner = Addr::unchecked("owner");
-    let init_funds = coins(20000, "btc");
-    app.init_bank_balance(&owner, init_funds).unwrap();
+    let init_funds = coins(20000, DENOM);
+    app.execute(
+        Addr::unchecked(FEDERAL_RESERVE),
+        BankMsg::Send {
+            to_address: owner.to_string(),
+            amount: init_funds,
+        }
+        .into(),
+    )
+    .unwrap();
 
     // set up cw20 contract with some tokens
     let cw20_id = app.store_code(contract_cw20());
