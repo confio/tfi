@@ -389,6 +389,7 @@ mod tests {
         QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
     use cw20_base::state::TokenInfo;
+    use cw4::MemberListResponse;
     use cw_storage_plus::Map;
 
     const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
@@ -415,11 +416,7 @@ mod tests {
                 QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                     self.query_wasm(contract_addr, key)
                 }
-                QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
-                    SystemResult::Err(SystemError::UnsupportedRequest {
-                        kind: "WasmQuery::Smart".to_string(),
-                    })
-                }
+                QueryRequest::Wasm(WasmQuery::Smart { .. }) => self.query_wasm_smart(),
                 _ => SystemResult::Err(SystemError::UnsupportedRequest {
                     kind: "not wasm".to_string(),
                 }),
@@ -436,6 +433,11 @@ mod tests {
                 let bin = self.storage.get(&key).unwrap_or_default();
                 SystemResult::Ok(ContractResult::Ok(bin.into()))
             }
+        }
+
+        fn query_wasm_smart(&self) -> QuerierResult {
+            let mlr = MemberListResponse { members: vec![] };
+            SystemResult::Ok(ContractResult::Ok(to_binary(&mlr).unwrap()))
         }
     }
 
