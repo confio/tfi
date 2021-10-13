@@ -1,11 +1,10 @@
 use cw20_base::msg::InstantiateMarketingInfo;
 
-use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw4::{Cw4Contract, Member};
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
-use cw_multi_test::{App, AppResponse, BankKeeper, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
@@ -107,12 +106,7 @@ impl ReceiverContract {
 }
 
 fn mock_app() -> App {
-    let env = mock_env();
-    let api = MockApi::default();
-    let bank = BankKeeper::new();
-    let storage = MockStorage::new();
-
-    App::new(api, env.block, bank, storage)
+    App::default()
 }
 
 fn contract_group() -> Box<dyn Contract<Empty>> {

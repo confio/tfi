@@ -1,22 +1,16 @@
 use anyhow::{anyhow, Result};
-use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
-use cosmwasm_std::{coins, to_binary, Addr, Decimal, Empty, Uint128};
+use cosmwasm_std::{coins, to_binary, Addr, BankMsg, Decimal, Empty, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ExecuteMsg};
 use cw4::{Cw4Contract, Member};
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
-use cw_multi_test::{App, BankKeeper, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::{Cw20HookMsg, ExecuteMsg as PairExecuteMsg};
 
 fn mock_app() -> App {
-    let env = mock_env();
-    let api = MockApi::default();
-    let bank = BankKeeper::new();
-    let storage = MockStorage::new();
-
-    App::new(api, env.block, bank, storage)
+    App::default()
 }
 
 fn contract_factory() -> Box<dyn Contract<Empty>> {
@@ -338,6 +332,15 @@ impl Config {
             .into_iter()
             .map(|actor| -> Result<_> {
                 let addr = Addr::unchecked(&actor.addr);
+                // app.execute(
+                //     Addr::unchecked("reserve"),
+                //     BankMsg::Send {
+                //         to_address: addr.to_string(),
+                //         amount: coins(actor.btc, "btc"),
+                //     }
+                //     .into(),
+                // )
+                // .unwrap();
                 app.init_bank_balance(&addr, coins(actor.btc, "btc"))
                     .map_err(|err| anyhow!(err))?;
 

@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Result};
-use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
 use cosmwasm_std::{coin, coins, to_binary, Addr, Decimal, Empty, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
-use cw_multi_test::{App, BankKeeper, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
 use crate::error::ContractError;
@@ -13,12 +12,7 @@ use tfi::pair::{
 };
 
 fn mock_app() -> App {
-    let env = mock_env();
-    let api = MockApi::default();
-    let bank = BankKeeper::new();
-    let storage = MockStorage::new();
-
-    App::new(api, env.block, bank, storage)
+    App::default()
 }
 
 pub fn contract_pair() -> Box<dyn Contract<Empty>> {
