@@ -9,16 +9,18 @@ use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::{Cw20HookMsg, ExecuteMsg as PairExecuteMsg};
 
-const FEDERAL_RESERVE: &str = "reserve";
+const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
 
 fn mock_app() -> App {
+    // Instantiates custom account (TEST_RESEVE) with arbitrary amount
+    // of tokens to fill any custom account later needed in tests
     AppBuilder::new_custom().build(|router, _, storage| {
         router
             .bank
             .init_balance(
                 storage,
-                &Addr::unchecked(FEDERAL_RESERVE),
+                &Addr::unchecked(TEST_RESERVE),
                 coins(100000, DENOM),
             )
             .unwrap();
@@ -345,7 +347,7 @@ impl Config {
             .map(|actor| -> Result<_> {
                 let addr = Addr::unchecked(&actor.addr);
                 app.execute(
-                    Addr::unchecked(FEDERAL_RESERVE),
+                    Addr::unchecked(TEST_RESERVE),
                     BankMsg::Send {
                         to_address: actor.addr.to_owned(),
                         amount: coins(actor.btc, DENOM),

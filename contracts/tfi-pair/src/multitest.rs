@@ -11,16 +11,18 @@ use tfi::pair::{
     SimulationResponse,
 };
 
-const FEDERAL_RESERVE: &str = "reserve";
+const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
 
 fn mock_app() -> App {
+    // Instantiates custom account (TEST_RESEVE) with arbitrary amount
+    // of tokens to fill any custom account later needed in tests
     AppBuilder::new_custom().build(|router, _, storage| {
         router
             .bank
             .init_balance(
                 storage,
-                &Addr::unchecked(FEDERAL_RESERVE),
+                &Addr::unchecked(TEST_RESERVE),
                 coins(100000, DENOM),
             )
             .unwrap();
@@ -387,7 +389,7 @@ impl SuiteConfig {
             .into_iter()
             .map(|lp| -> Result<_> {
                 app.execute(
-                    Addr::unchecked(FEDERAL_RESERVE),
+                    Addr::unchecked(TEST_RESERVE),
                     BankMsg::Send {
                         to_address: lp.addr.to_string(),
                         amount: coins(lp.btc, DENOM),
@@ -487,7 +489,7 @@ fn setup_liquidity_pool() {
     let owner = Addr::unchecked("owner");
     let init_funds = coins(20000, DENOM);
     app.execute(
-        Addr::unchecked(FEDERAL_RESERVE),
+        Addr::unchecked(TEST_RESERVE),
         BankMsg::Send {
             to_address: owner.to_string(),
             amount: init_funds,
