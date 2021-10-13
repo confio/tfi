@@ -385,11 +385,11 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage};
     use cosmwasm_std::{
-        from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QuerierWrapper,
-        QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
+        from_binary, from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+        QuerierWrapper, QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
     use cw20_base::state::TokenInfo;
-    use cw4::MemberListResponse;
+    use cw4::{Cw4QueryMsg, MemberListResponse};
     use cw_storage_plus::Map;
 
     const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
@@ -416,7 +416,7 @@ mod tests {
                 QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                     self.query_wasm(contract_addr, key)
                 }
-                QueryRequest::Wasm(WasmQuery::Smart { .. }) => self.query_wasm_smart(),
+                QueryRequest::Wasm(WasmQuery::Smart { msg, .. }) => self.query_wasm_smart(msg),
                 _ => SystemResult::Err(SystemError::UnsupportedRequest {
                     kind: "not wasm".to_string(),
                 }),
@@ -435,9 +435,16 @@ mod tests {
             }
         }
 
-        fn query_wasm_smart(&self) -> QuerierResult {
-            let mlr = MemberListResponse { members: vec![] };
-            SystemResult::Ok(ContractResult::Ok(to_binary(&mlr).unwrap()))
+        fn query_wasm_smart(&self, msg: Binary) -> QuerierResult {
+            match from_binary(&msg) {
+                Ok(Cw4QueryMsg::ListMembers { .. }) => {
+                    let mlr = MemberListResponse { members: vec![] };
+                    SystemResult::Ok(ContractResult::Ok(to_binary(&mlr).unwrap()))
+                }
+                _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "Not ListMembers query".to_string(),
+                }),
+            }
         }
     }
 
