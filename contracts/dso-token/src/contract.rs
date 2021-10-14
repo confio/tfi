@@ -392,6 +392,8 @@ mod tests {
     use cw4::{Cw4QueryMsg, MemberListResponse};
     use cw_storage_plus::Map;
 
+    use std::marker::PhantomData;
+
     const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
 
     struct GroupQuerier {
@@ -514,6 +516,7 @@ mod tests {
             storage,
             api,
             querier,
+            custom_query_type: PhantomData,
         };
 
         BALANCES
@@ -566,6 +569,7 @@ mod tests {
             storage,
             api,
             querier,
+            custom_query_type: PhantomData,
         };
 
         TOKEN_INFO
@@ -614,6 +618,7 @@ mod tests {
             storage,
             api,
             querier,
+            custom_query_type: PhantomData,
         };
 
         BALANCES
@@ -679,6 +684,7 @@ mod tests {
             storage: MockStorage::new(),
             api: MockApi::default(),
             querier: GroupQuerier::new(&whitelist_addr, &[]),
+            custom_query_type: PhantomData::<Empty>,
         };
 
         let info = MessageInfo {

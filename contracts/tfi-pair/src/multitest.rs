@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Result};
-use cosmwasm_std::testing::{mock_env, MockApi, MockStorage};
-use cosmwasm_std::{coin, coins, to_binary, Addr, Decimal, Empty, StdError, Uint128};
+use cosmwasm_std::{coin, coins, to_binary, Addr, BankMsg, Decimal, Empty, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
-use cw_multi_test::{App, BankKeeper, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 
 use crate::error::ContractError;
@@ -12,13 +11,22 @@ use tfi::pair::{
     SimulationResponse,
 };
 
-fn mock_app() -> App {
-    let env = mock_env();
-    let api = MockApi::default();
-    let bank = BankKeeper::new();
-    let storage = MockStorage::new();
+const TEST_RESERVE: &str = "reserve";
+const DENOM: &str = "btc";
 
-    App::new(api, env.block, bank, storage)
+fn mock_app() -> App {
+    // Instantiates custom account (TEST_RESERVE) with arbitrary amount
+    // of tokens to fill any custom account later needed in tests
+    AppBuilder::new_custom().build(|router, _, storage| {
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked(TEST_RESERVE),
+                coins(100000, DENOM),
+            )
+            .unwrap();
+    })
 }
 
 pub fn contract_pair() -> Box<dyn Contract<Empty>> {
@@ -380,8 +388,15 @@ impl SuiteConfig {
         let pairs = actors
             .into_iter()
             .map(|lp| -> Result<_> {
-                app.init_bank_balance(&lp.addr, coins(lp.btc, "btc"))
-                    .map_err(|err| anyhow!(err))?;
+                app.execute(
+                    Addr::unchecked(TEST_RESERVE),
+                    BankMsg::Send {
+                        to_address: lp.addr.to_string(),
+                        amount: coins(lp.btc, DENOM),
+                    }
+                    .into(),
+                )
+                .unwrap();
 
                 let cash = Cw20Coin {
                     address: lp.addr.to_string(),
@@ -472,8 +487,16 @@ fn setup_liquidity_pool() {
 
     // set personal balance
     let owner = Addr::unchecked("owner");
-    let init_funds = coins(20000, "btc");
-    app.init_bank_balance(&owner, init_funds).unwrap();
+    let init_funds = coins(20000, DENOM);
+    app.execute(
+        Addr::unchecked(TEST_RESERVE),
+        BankMsg::Send {
+            to_address: owner.to_string(),
+            amount: init_funds,
+        }
+        .into(),
+    )
+    .unwrap();
 
     // set up cw20 contract with some tokens
     let cw20_id = app.store_code(contract_cw20());

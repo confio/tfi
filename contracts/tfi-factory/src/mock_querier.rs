@@ -3,7 +3,7 @@ use cosmwasm_std::{
     from_slice, to_binary, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 use tfi::asset::{AssetInfo, PairInfo};
 
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -18,6 +18,7 @@ pub fn mock_dependencies(
         api: MockApi::default(),
         storage: MockStorage::default(),
         querier: custom_querier,
+        custom_query_type: PhantomData,
     }
 }
 

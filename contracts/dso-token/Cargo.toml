@@ -1,6 +1,6 @@
 [package]
 name = "dso-token"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2018"
 
@@ -20,19 +20,19 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = { version = "0.16.0" }
-cw-storage-plus = "0.8.0"
-cw20-base = { version = "0.8.0", features = ["library"] }
-cw2 = "0.8.0"
-cw4 = "0.8.0"
-cw20 = "0.8.0"
+cosmwasm-std = "=1.0.0-beta"
+cw-storage-plus = "=0.10"
+cw20-base = { version = "=0.10", features = ["library"] }
+cw2 = "=0.10"
+cw4 = "=0.10"
+cw20 = "=0.10"
 schemars = "0.8.1"
 serde = { version = "1.0.125", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.24" }
 
 [dev-dependencies]
 anyhow = "1"
-cosmwasm-schema = { version = "0.16.0" }
-cw-multi-test = "0.8.1"
-cw4-group = "0.8.0"
+cosmwasm-schema = "=1.0.0-beta"
+cw-multi-test = "=0.10"
+cw4-group = "=0.10"
 derivative = "2"
