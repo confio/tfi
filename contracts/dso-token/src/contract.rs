@@ -37,8 +37,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let cw20_msg = cw20_base::msg::InstantiateMsg {
-        name: msg.name,
-        symbol: msg.symbol,
+        name: msg.name.clone(),
+        symbol: msg.symbol.clone(),
         decimals: msg.decimals,
         initial_balances: msg.initial_balances,
         mint: msg.mint,
@@ -48,12 +48,17 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
-    let contract = Cw4Contract(addr);
+    let contract = Cw4Contract(addr.clone());
     // verify the whitelist contract is actually cw4
     contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
 
-    Ok(Response::default())
+    let event = Event::new("create_token")
+        .add_attribute("name", msg.name)
+        .add_attribute("symbol", msg.symbol)
+        .add_attribute("decimal", msg.decimals.to_string())
+        .add_attribute("allow_group", addr.to_string());
+    Ok(Response::default().add_event(event))
 }
 
 pub(crate) fn verify_sender_on_whitelist(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
@@ -74,7 +79,7 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
         return Err(ContractError::Unauthorized {});
     }
     for address in addresses {
-        let validated_address = deps.api.addr_validate(&address)?;
+        let validated_address = deps.api.addr_validate(address)?;
         if whitelist
             .is_member(&deps.querier, &validated_address)?
             .is_none()
@@ -380,10 +385,11 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage};
     use cosmwasm_std::{
-        from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QuerierWrapper,
-        QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
+        from_binary, from_slice, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+        QuerierWrapper, QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
     use cw20_base::state::TokenInfo;
+    use cw4::{Cw4QueryMsg, MemberListResponse};
     use cw_storage_plus::Map;
 
     use std::marker::PhantomData;
@@ -412,11 +418,7 @@ mod tests {
                 QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                     self.query_wasm(contract_addr, key)
                 }
-                QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
-                    SystemResult::Err(SystemError::UnsupportedRequest {
-                        kind: "WasmQuery::Smart".to_string(),
-                    })
-                }
+                QueryRequest::Wasm(WasmQuery::Smart { msg, .. }) => self.query_wasm_smart(msg),
                 _ => SystemResult::Err(SystemError::UnsupportedRequest {
                     kind: "not wasm".to_string(),
                 }),
@@ -432,6 +434,18 @@ mod tests {
             } else {
                 let bin = self.storage.get(&key).unwrap_or_default();
                 SystemResult::Ok(ContractResult::Ok(bin.into()))
+            }
+        }
+
+        fn query_wasm_smart(&self, msg: Binary) -> QuerierResult {
+            match from_binary(&msg) {
+                Ok(Cw4QueryMsg::ListMembers { .. }) => {
+                    let mlr = MemberListResponse { members: vec![] };
+                    SystemResult::Ok(ContractResult::Ok(to_binary(&mlr).unwrap()))
+                }
+                _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "Not ListMembers query".to_string(),
+                }),
             }
         }
     }
@@ -647,5 +661,46 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(ContractError::RedeemCodeUsed {}, err);
+    }
+
+    #[test]
+    fn instantiate_event() {
+        let name = "Liquid Gold".to_string();
+        let symbol = "GOLD".to_string();
+        let decimals = 6;
+        let whitelist_group = "tgrade123456789".to_string();
+        let instantiate_msg = InstantiateMsg {
+            name: name.clone(),
+            symbol: symbol.clone(),
+            decimals,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+            whitelist_group: whitelist_group.clone(),
+        };
+
+        let whitelist_addr = Addr::unchecked("whitelist");
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: GroupQuerier::new(&whitelist_addr, &[]),
+            custom_query_type: PhantomData::<Empty>,
+        };
+
+        let info = MessageInfo {
+            sender: Addr::unchecked("SENDER"),
+            funds: vec![],
+        };
+
+        assert_eq!(
+            instantiate(deps.as_mut(), mock_env(), info, instantiate_msg),
+            Ok(Response::new().add_event(
+                Event::new("create_token")
+                    .add_attribute("name", name)
+                    .add_attribute("symbol", symbol)
+                    .add_attribute("decimal", decimals.to_string())
+                    .add_attribute("allow_group", whitelist_group)
+            ))
+        );
     }
 }
