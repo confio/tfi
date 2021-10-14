@@ -368,7 +368,7 @@ dependencies = [
 
 [[package]]
 name = "dso-token"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -819,7 +819,7 @@ dependencies = [
 
 [[package]]
 name = "tfi"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -832,7 +832,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-factory"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -856,7 +856,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-mocks"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -868,7 +868,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-pair"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -910,7 +910,7 @@ dependencies = [
 
 [[package]]
 name = "trusted-circle"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
