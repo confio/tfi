@@ -13,7 +13,7 @@ const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
 
 fn mock_app() -> App {
-    // Instantiates custom account (TEST_RESEVE) with arbitrary amount
+    // Instantiates custom account (TEST_RESERVE) with arbitrary amount
     // of tokens to fill any custom account later needed in tests
     AppBuilder::new_custom().build(|router, _, storage| {
         router
