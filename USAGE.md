@@ -25,7 +25,7 @@ Once you have these, upload all three codes and record the code ids. I will call
 
 Note that you must use `cw20-base` (or similar) for the token in `TOKEN_ID`, as the 
 [`InstantiateMsg` is fixed](https://github.com/confio/tfi/blob/main/packages/tfi/src/token.rs#L7-L15).
-This is used for *liquidity tokens*. You can use any custom (whitelist / dso) token contract for the trading pairs.
+This is used for *liquidity tokens*. You can use any custom (whitelist / trusted) token contract for the trading pairs.
 
 ## Instantiate the Factory
 

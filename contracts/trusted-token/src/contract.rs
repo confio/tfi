@@ -21,7 +21,7 @@ use crate::msg::{
 use crate::state::{Redeem, REEDEMS, WHITELIST};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:dso-token";
+const CONTRACT_NAME: &str = "crates.io:trusted-token";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 // settings for pagination
 const MAX_LIMIT: u32 = 30;
