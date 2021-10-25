@@ -59,9 +59,9 @@ fn contract_cw20() -> Box<dyn Contract<Empty>> {
 
 fn contract_token() -> Box<dyn Contract<Empty>> {
     Box::new(ContractWrapper::new(
-        dso_token::contract::execute,
-        dso_token::contract::instantiate,
-        dso_token::contract::query,
+        trusted_token::contract::execute,
+        trusted_token::contract::instantiate,
+        trusted_token::contract::query,
     ))
 }
 
@@ -76,7 +76,7 @@ fn contract_group() -> Box<dyn Contract<Empty>> {
 /// Testing environment with:
 /// * single native token "btc"
 /// * single cw4-group used as whitelist
-/// * single dso-token "cash" using internal group
+/// * single trusted-token "cash" using internal group
 /// * single tfi-factory
 /// * number of actors which are just address initialized with some "btc" and "cash"
 ///
@@ -94,7 +94,7 @@ pub struct Suite {
     pub actors: Vec<Addr>,
     /// cw4 whitelist contract address
     pub whitelist: Cw4Contract,
-    /// dso-token cash contract address
+    /// trusted-token cash contract address
     pub cash: Cw20Contract,
     /// tfi-factory contract address
     pub factory: Addr,
@@ -414,7 +414,7 @@ impl Config {
         app.instantiate_contract(
             cw20_id,
             owner.clone(),
-            &dso_token::msg::InstantiateMsg {
+            &trusted_token::msg::InstantiateMsg {
                 name: "Cash Token".to_owned(),
                 symbol: "CASH".to_owned(),
                 decimals: 9,

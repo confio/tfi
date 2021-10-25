@@ -6,7 +6,7 @@ workflows:
     jobs:
       - contract_tfi_factory
       - contract_tfi_pair
-      - contract_dso_token
+      - contract_trusted_token
       - package_tfi
   build:
     jobs:
@@ -94,10 +94,10 @@ jobs:
             - target
           key: cargocache-tfi-pair-rust:1.51.0-{{ checksum "~/project/Cargo.lock" }}
 
-  contract_dso_token:
+  contract_trusted_token:
     docker:
       - image: rust:1.51.0
-    working_directory: ~/project/contracts/dso-token
+    working_directory: ~/project/contracts/trusted-token
     steps:
       - checkout:
           path: ~/project
@@ -106,7 +106,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version
       - restore_cache:
           keys:
-            - cargocache-dso-token-rust:1.51.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-trusted-token-rust:1.51.0-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Unit Tests
           environment:
@@ -128,7 +128,7 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-dso-token-rust:1.51.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-trusted-token-rust:1.51.0-{{ checksum "~/project/Cargo.lock" }}
 
   package_tfi:
     docker:

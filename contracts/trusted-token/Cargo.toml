@@ -1,5 +1,5 @@
 [package]
-name = "dso-token"
+name = "trusted-token"
 version = "0.2.0"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2018"

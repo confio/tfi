@@ -9,13 +9,9 @@ incremental = false
 codegen-units = 1
 incremental = false
 
-[profile.release.package.dso-token]
-opt-level = 3
-debug = false
-debug-assertions = false
+[profile.release.package.trusted-token]
 codegen-units = 1
 incremental = false
-overflow-checks = true
 
 [profile.release]
 rpath = false

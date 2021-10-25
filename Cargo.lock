@@ -367,26 +367,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dso-token"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test",
- "cw-storage-plus",
- "cw2",
- "cw20",
- "cw20-base",
- "cw4",
- "cw4-group",
- "derivative",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "dyn-clone"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -845,13 +825,13 @@ dependencies = [
  "cw4",
  "cw4-group",
  "derivative",
- "dso-token",
  "protobuf",
  "schemars",
  "serde",
  "tfi",
  "tfi-pair",
  "thiserror",
+ "trusted-token",
 ]
 
 [[package]]
@@ -918,6 +898,26 @@ dependencies = [
  "cw3",
  "schemars",
  "serde",
+]
+
+[[package]]
+name = "trusted-token"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "cw4",
+ "cw4-group",
+ "derivative",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

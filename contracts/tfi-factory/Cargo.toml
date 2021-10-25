@@ -37,7 +37,7 @@ cosmwasm-storage = "=1.0.0-beta"
 anyhow = { version = "1", features = ["backtrace"] }
 cw-multi-test = "=0.10"
 tfi-pair = { path = "../tfi-pair", version = "0.2.0" }
-dso-token = { path = "../dso-token", version = "0.2.0" }
+trusted-token = { path = "../trusted-token", version = "0.2.0" }
 derivative = "2"
 cw4-group = { version = "=0.10", features = ["library"] }
 cw4 = "=0.10"
