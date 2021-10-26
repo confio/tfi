@@ -1,12 +1,12 @@
-# DSO Token
+# Trusted Token
 
-This is a cw20-based token with whitelisting, to be used in the context of a DSO.
+This is a cw20-based token with whitelisting, to be used in the context of a Trusted Circle.
 
 It can be used to provide one side of a trading pair in an AMM setting.
 
 Only whitelisted users will be able to add liquidity to the token, and trade it.
 
-## Differences between standard cw20 and dso-token
+## Differences between standard cw20 and trusted-token
 
 ### Instantiation
 
@@ -26,6 +26,53 @@ pub struct InstantiateMsg {
 
 New field is the address of cw4 group contract. Only addresses being members of
 this group would be able to trade this token.
+
+### Execution
+
+We override the `execute` method and check that all addresses (sender, recipient, owner if sending on someone else's behalf)
+are members of the whitelist contract before dispatching to the standard `cw20-base` action.  This looks like:
+
+```rust
+pub fn execute() {
+  let res = match msg {
+    ExecuteMsg::Transfer { recipient, amount } => {
+      verify_sender_and_addresses_on_whitelist(deps.as_ref(), &info.sender, & [&recipient])?;
+      cw20_base::contract::execute_transfer(deps, env, info, recipient, amount)?
+    }
+    // other variants....
+  };
+  // rest of code...
+}
+```
+
+The key logic then looks like this:
+
+```rust
+pub(crate) fn verify_sender_and_addresses_on_whitelist(
+    deps: Deps,
+    sender: &Addr,
+    addresses: &[&str],
+) -> Result<(), ContractError> {
+    let whitelist: Cw4Contract = WHITELIST.load(deps.storage)?;
+    if whitelist.is_member(&deps.querier, sender)?.is_none() {
+        return Err(ContractError::Unauthorized {});
+    }
+    for address in addresses {
+        let validated_address = deps.api.addr_validate(address)?;
+        if whitelist
+            .is_member(&deps.querier, &validated_address)?
+            .is_none()
+        {
+            return Err(ContractError::Unauthorized {});
+        }
+    }
+    Ok(())
+}
+```
+
+Note that it just checks if the member is present in the group contract, it is unimportant what weight it has.
+This means that even 0 weight (which will not allow it to vote in voting contracts) is sufficient to pass the whitelist.
+It must be fully removed from the group contract to no longer pass the whitelisting check.
 
 ## New messages
 

@@ -85,7 +85,7 @@ fn pair_not_whitelisted() {
         .provide_liquidity(&pair, &lp, 2000, 6000)
         .unwrap_err();
 
-    assert_error(err, dso_token::error::ContractError::Unauthorized {});
+    assert_error(err, trusted_token::error::ContractError::Unauthorized {});
 }
 
 /// Failure test showing up, that it is impossible to provide liquidity nor swap with pair by
@@ -123,11 +123,11 @@ fn actors_not_whitelisted() {
     let err = suite
         .increase_allowance(&cash.addr(), &lp, &pair, 6000)
         .unwrap_err();
-    assert_error(err, dso_token::error::ContractError::Unauthorized {});
+    assert_error(err, trusted_token::error::ContractError::Unauthorized {});
 
     // As non-member liquidity provider is not allowed to provide liquidity
     let err = suite.provide_liquidity(&pair, &lp, 2000, 6000).unwrap_err();
-    assert_error(err, dso_token::error::ContractError::Unauthorized {});
+    assert_error(err, trusted_token::error::ContractError::Unauthorized {});
 
     // Even if lp is later added, he would need to increase allowance first, as previous attempt
     // failed
@@ -140,8 +140,8 @@ fn actors_not_whitelisted() {
 
     // Non whitelisted members has no swap rights
     let err = suite.swap_btc(&pair, &trader, 1000).unwrap_err();
-    assert_error(err, dso_token::error::ContractError::Unauthorized {});
+    assert_error(err, trusted_token::error::ContractError::Unauthorized {});
 
     let err = suite.swap_cash(&pair, &trader, 1000).unwrap_err();
-    assert_error(err, dso_token::error::ContractError::Unauthorized {});
+    assert_error(err, trusted_token::error::ContractError::Unauthorized {});
 }

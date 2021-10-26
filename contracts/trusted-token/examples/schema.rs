@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use dso_token::msg::{
+use trusted_token::msg::{
     AllRedeemsResponse, ExecuteMsg, InstantiateMsg, IsWhitelistedResponse, QueryMsg,
     RedeemResponse, WhitelistResponse,
 };

@@ -127,7 +127,7 @@ fn contract_cw20() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-/// Testing environment with dso-token "cash", and configured members
+/// Testing environment with trusted-token "cash", and configured members
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Suite {
@@ -142,7 +142,7 @@ pub struct Suite {
     pub minter: Option<Addr>,
     /// cw4 whitelist contract address
     pub whitelist: Cw4Contract,
-    /// dso-token cash contract address
+    /// trusted-token cash contract address
     pub cash: Cw20Contract,
 }
 
