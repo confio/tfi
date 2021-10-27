@@ -2,18 +2,18 @@
 
 Components to build out Regulated DeFi for [Tgrade blockchain](https://tgrade.finance)
 
+Current state:
+
 * AMM (ported from `terraswap`)
 * Whitelisted Token
 
 ## Contracts
 
-TODO
-
 | Name                                               | Description                                  |
 | -------------------------------------------------- | -------------------------------------------- |
-| [`tfi_factory`](contracts/tfi_factory) |                                              |
-| [`tfi_pair`](contracts/tfi_pair)       |                                              |
-| [`tfi_router`](contracts/tfi_router)   |                                              |
+| [`tfi_factory`](contracts/tfi-factory) |             Factory Contract to create new trading pair             |
+| [`tfi_pair`](contracts/tfi-pair)       |            Trading Pair that can swap two tokens             |
+| [`trusted-token`](contracts/trusted-token)   |       CW20 Token that limits all holders to a whitelist               |
 
 ## Running this contract
 
@@ -32,7 +32,7 @@ Or for a production-ready (compressed) build, run the following from the reposit
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.11.2
+  cosmwasm/workspace-optimizer:0.12.1
 ```
 
 The optimized contracts are generated in the artifacts/ directory.
