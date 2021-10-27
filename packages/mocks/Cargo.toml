@@ -1,7 +1,7 @@
 [package]
 name = "tfi-mocks"
 version = "0.2.1"
-authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
+authors = ["Confio GmbH"]
 edition = "2018"
 description = "Mocks for tfi tests"
 license = "Apache-2.0"

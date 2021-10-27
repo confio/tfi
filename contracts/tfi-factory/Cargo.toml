@@ -1,10 +1,10 @@
 [package]
 name = "tfi-factory"
 version = "0.2.1"
-authors = ["Terraform Labs, PTE."]
+authors = ["Confio GmbH", "Terraform Labs, PTE."]
 edition = "2018"
 description = "A tfi factory contract - auto pair contract generator and also directory for all pairs"
-license = "MIT"
+license = "Apache-2.0"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
