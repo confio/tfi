@@ -297,18 +297,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw3"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2253b0f9e257a954db4657e4edad03acd2d42558aa3da3fe03daf99c429d73c4"
-dependencies = [
- "cosmwasm-std",
- "cw0",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "cw4"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -799,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "tfi"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -812,7 +800,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-factory"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -836,7 +824,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-mocks"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -848,7 +836,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-pair"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -889,20 +877,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "trusted-circle"
-version = "0.2.1"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw0",
- "cw3",
- "schemars",
- "serde",
-]
-
-[[package]]
 name = "trusted-token"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
