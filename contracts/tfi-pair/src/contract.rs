@@ -10,6 +10,7 @@ use cosmwasm_std::{
     Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 
+use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use integer_sqrt::IntegerSquareRoot;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
@@ -20,6 +21,10 @@ use tfi::pair::{
 use tfi::querier::query_supply;
 use tfi::token::InstantiateMsg as TokenInstantiateMsg;
 
+// version info for migration info
+const CONTRACT_NAME: &str = "crates.io:tfi-pair";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -27,6 +32,7 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     if !(Decimal::zero()..=Decimal::one()).contains(&msg.commission) {
         return Err(ContractError::InvalidCommission(msg.commission));
     }
