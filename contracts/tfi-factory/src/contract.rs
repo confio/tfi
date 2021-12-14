@@ -4,6 +4,7 @@ use cosmwasm_std::{
     to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, SubMsg, WasmMsg,
 };
+use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::querier::query_liquidity_token;
@@ -17,6 +18,10 @@ use tfi::factory::{
 };
 use tfi::pair::InstantiateMsg as PairInstantiateMsg;
 
+// version info for migration info
+const CONTRACT_NAME: &str = "crates.io:tfi-factory";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -24,6 +29,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     if !(Decimal::zero()..=Decimal::one()).contains(&msg.default_commission) {
         return Err(ContractError::InvalidCommission(msg.default_commission));
     }
