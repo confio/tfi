@@ -45,7 +45,7 @@ pub fn instantiate(
     )
     .with_commission(msg.commission);
 
-    PAIR_INFO.save(deps.storage, &pair_info)?;
+    PAIR_INFO.save(deps.storage, pair_info)?;
 
     let token_init = &TokenInstantiateMsg {
         name: "tfi liquidity token".to_string(),
