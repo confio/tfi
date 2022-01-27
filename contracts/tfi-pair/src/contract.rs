@@ -613,14 +613,20 @@ pub fn assert_max_spread(
             .checked_sub(return_amount)
             .unwrap_or_else(|_| Uint128::zero());
 
-        if return_amount < expected_return
-            && Decimal::from_ratio(spread_amount, expected_return) > max_spread
-        {
-            return Err(ContractError::MaxSpreadAssertion {});
+        let spread_ratio = Decimal::from_ratio(spread_amount, expected_return);
+        if return_amount < expected_return && spread_ratio > max_spread {
+            return Err(ContractError::MaxSpreadAssertion {
+                spread_ratio,
+                max_spread,
+            });
         }
     } else if let Some(max_spread) = max_spread {
-        if Decimal::from_ratio(spread_amount, return_amount + spread_amount) > max_spread {
-            return Err(ContractError::MaxSpreadAssertion {});
+        let spread_ratio = Decimal::from_ratio(spread_amount, return_amount + spread_amount);
+        if spread_ratio > max_spread {
+            return Err(ContractError::MaxSpreadAssertion {
+                spread_ratio,
+                max_spread,
+            });
         }
     }
 
@@ -636,16 +642,24 @@ fn assert_slippage_tolerance(
         let one_minus_slippage_tolerance = decimal_subtraction(Decimal::one(), slippage_tolerance)?;
 
         // Ensure each prices are not dropped as much as slippage tolerance rate
-        if decimal_multiplication(
-            Decimal::from_ratio(deposits[0], deposits[1]),
-            one_minus_slippage_tolerance,
-        ) > Decimal::from_ratio(pools[0].amount, pools[1].amount)
-            || decimal_multiplication(
-                Decimal::from_ratio(deposits[1], deposits[0]),
-                one_minus_slippage_tolerance,
-            ) > Decimal::from_ratio(pools[1].amount, pools[0].amount)
-        {
-            return Err(ContractError::MaxSlippageAssertion {});
+        let deposits_ratio = Decimal::from_ratio(deposits[0], deposits[1]);
+        let pools_ratio = Decimal::from_ratio(pools[0].amount, pools[1].amount);
+        if decimal_multiplication(deposits_ratio, one_minus_slippage_tolerance) > pools_ratio {
+            return Err(ContractError::MaxSlippageAssertion {
+                deposits_ratio,
+                pools_ratio,
+                slippage_tolerance,
+            });
+        }
+
+        let deposits_ratio = Decimal::from_ratio(deposits[1], deposits[0]);
+        let pools_ratio = Decimal::from_ratio(pools[1].amount, pools[0].amount);
+        if decimal_multiplication(deposits_ratio, one_minus_slippage_tolerance) > pools_ratio {
+            return Err(ContractError::MaxSlippageAssertion {
+                deposits_ratio,
+                pools_ratio,
+                slippage_tolerance,
+            });
         }
     }
 

@@ -15,11 +15,18 @@ pub enum ContractError {
     #[error("Invalid zero amount")]
     InvalidZeroAmount {},
 
-    #[error("Max spread assertion")]
-    MaxSpreadAssertion {},
+    #[error("Max spread exceeded, spread ratio: {spread_ratio}, max spread: {max_spread}")]
+    MaxSpreadAssertion {
+        spread_ratio: Decimal,
+        max_spread: Decimal,
+    },
 
-    #[error("Max slippage assertion")]
-    MaxSlippageAssertion {},
+    #[error("Max slippage exceeded, deposits ratio: {deposits_ratio}, pools ratio: {pools_ratio}, slippage tolerance: {slippage_tolerance}")]
+    MaxSlippageAssertion {
+        deposits_ratio: Decimal,
+        pools_ratio: Decimal,
+        slippage_tolerance: Decimal,
+    },
 
     #[error("Asset mismatch: {0}")]
     AssetMismatch(String),

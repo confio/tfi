@@ -357,10 +357,7 @@ fn provide_liquidity() {
         }],
     );
     let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
-    match res {
-        ContractError::MaxSlippageAssertion {} => {}
-        _ => panic!("DO NOT ENTER HERE"),
-    }
+    assert!(matches!(res, ContractError::MaxSlippageAssertion { .. }));
 
     // initialize token balance to 1:1
     deps.querier.with_balance(&[(
@@ -395,10 +392,7 @@ fn provide_liquidity() {
         }],
     );
     let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
-    match res {
-        ContractError::MaxSlippageAssertion {} => {}
-        _ => panic!("DO NOT ENTER HERE"),
-    }
+    assert!(matches!(res, ContractError::MaxSlippageAssertion { .. }));
 
     // initialize token balance to 1:1
     deps.querier.with_balance(&[(
