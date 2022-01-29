@@ -542,8 +542,8 @@ fn setup_liquidity_pool() {
     assert!(
         err.to_string().ends_with(&expected_err.to_string()),
         "got: {}, expected: {}",
-        err.to_string(),
-        expected_err.to_string()
+        err,
+        expected_err
     );
 
     // simulate with proper token
@@ -560,8 +560,8 @@ fn setup_liquidity_pool() {
     assert!(
         err.to_string().ends_with(&expected_err.to_string()),
         "got: {}, expected: {}",
-        err.to_string(),
-        expected_err.to_string()
+        err,
+        expected_err,
     );
 
     // provide an allowance to pay into LP

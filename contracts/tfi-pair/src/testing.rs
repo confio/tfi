@@ -210,7 +210,7 @@ fn provide_liquidity() {
     // provide more liquidity 1:2, which is not proportional to 1:1,
     // then it must accept 1:1 and treat left amount as donation
     deps.querier.with_balance(&[(
-        &MOCK_CONTRACT_ADDR,
+        MOCK_CONTRACT_ADDR,
         vec![Coin {
             denom: "uusd".to_string(),
             amount: Uint128::new(200 + 200 /* user deposit must be pre-applied */),
