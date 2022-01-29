@@ -24,7 +24,7 @@ workflows:
 jobs:
   contract_tfi_factory:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     working_directory: ~/project/contracts/tfi-factory
     steps:
       - checkout:
@@ -34,7 +34,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version
       - restore_cache:
           keys:
-            - cargocache-tfi-factory-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-tfi-factory-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Unit Tests
           environment:
@@ -56,11 +56,11 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-tfi-factory-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-tfi-factory-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
 
   contract_tfi_pair:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     working_directory: ~/project/contracts/tfi-pair
     steps:
       - checkout:
@@ -70,7 +70,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version
       - restore_cache:
           keys:
-            - cargocache-tfi-pair-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-tfi-pair-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Unit Tests
           environment:
@@ -92,11 +92,11 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-tfi-pair-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-tfi-pair-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
 
   contract_trusted_token:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     working_directory: ~/project/contracts/trusted-token
     steps:
       - checkout:
@@ -106,7 +106,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version
       - restore_cache:
           keys:
-            - cargocache-trusted-token-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-trusted-token-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Unit Tests
           environment:
@@ -128,11 +128,11 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-trusted-token-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-trusted-token-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
 
   package_tfi:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     working_directory: ~/project/packages/tfi
     steps:
       - checkout:
@@ -142,7 +142,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version; rustup target list --installed
       - restore_cache:
           keys:
-            - cargocache-v2-tfi:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-v2-tfi:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Build library for native target
           command: cargo build --locked
@@ -165,12 +165,12 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-v2-tfi:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-v2-tfi:1.58.1-{{ checksum "~/project/Cargo.lock" }}
 
 
   lint:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     steps:
       - checkout
       - run:
@@ -178,7 +178,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version; rustup target list --installed
       - restore_cache:
           keys:
-            - cargocache-v2-lint-rust:1.54.0-{{ checksum "Cargo.lock" }}
+            - cargocache-v2-lint-rust:1.58.1-{{ checksum "Cargo.lock" }}
       - run:
           name: Add rustfmt component
           command: rustup component add rustfmt
@@ -197,7 +197,7 @@ jobs:
             - target/debug/.fingerprint
             - target/debug/build
             - target/debug/deps
-          key: cargocache-v2-lint-rust:1.54.0-{{ checksum "Cargo.lock" }}
+          key: cargocache-v2-lint-rust:1.58.1-{{ checksum "Cargo.lock" }}
 
   # This runs one time on the top level to ensure all contracts compile properly into wasm.
   # We don't run the wasm build per contract build, and then reuse a lot of the same dependencies, so this speeds up CI time
@@ -205,7 +205,7 @@ jobs:
   # We also sanity-check the resultant wasm files.
   wasm-build:
     docker:
-      - image: rust:1.54.0
+      - image: rust:1.58.1
     steps:
       - checkout:
           path: ~/project
@@ -214,7 +214,7 @@ jobs:
           command: rustc --version; cargo --version; rustup --version
       - restore_cache:
           keys:
-            - cargocache-wasm-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+            - cargocache-wasm-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Add wasm32 target
           command: rustup target add wasm32-unknown-unknown
@@ -234,7 +234,7 @@ jobs:
           paths:
             - /usr/local/cargo/registry
             - target
-          key: cargocache-wasm-rust:1.54.0-{{ checksum "~/project/Cargo.lock" }}
+          key: cargocache-wasm-rust:1.58.1-{{ checksum "~/project/Cargo.lock" }}
       - run:
           name: Check wasm contracts
           command: |
