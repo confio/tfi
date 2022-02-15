@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use cosmwasm_std::{coins, to_binary, Addr, BankMsg, Decimal, Empty, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ExecuteMsg};
-use cw4::{Cw4Contract, Member};
+use tg4::{Cw4Contract, Member};
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use derivative::Derivative;

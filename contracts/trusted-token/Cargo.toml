@@ -21,19 +21,21 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = "=1.0.0-beta"
-cw-storage-plus = "=0.10"
-cw20-base = { version = "=0.10", features = ["library"] }
-cw2 = "=0.10"
-cw4 = "=0.10"
-cw20 = "=0.10"
+cosmwasm-std = "=1.0.0-beta5"
+cw-storage-plus = "0.11.1"
+cw20-base = { version = "0.11.1", features = ["library"] }
+cw2 = "0.11.1"
+tg4 = "0.6.0"
+cw20 = "0.11.1"
 schemars = "0.8.1"
 serde = { version = "1.0.125", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.24" }
 
 [dev-dependencies]
 anyhow = "1"
-cosmwasm-schema = "=1.0.0-beta"
-cw-multi-test = "=0.10"
-cw4-group = "=0.10"
+cosmwasm-schema = "=1.0.0-beta5"
+cw-multi-test = "0.11.1"
 derivative = "2"
+tg4-engagement = "0.6.0"
+tg-bindings = "0.6.0"
+tg-bindings-test = "0.6.0"

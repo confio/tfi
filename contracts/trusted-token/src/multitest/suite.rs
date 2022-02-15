@@ -2,9 +2,11 @@ use cw20_base::msg::InstantiateMarketingInfo;
 
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
-use cw4::{Cw4Contract, Member};
-use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
+use tg4::{Member, Tg4Contract};
+use tg4_engagement::msg::ExecuteMsg as Tg4ExecuteMsg;
+use tg_bindings::TgradeMsg;
+use tg_bindings_test::TgradeApp;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
@@ -109,11 +111,11 @@ fn mock_app() -> App {
     App::default()
 }
 
-fn contract_group() -> Box<dyn Contract<Empty>> {
+fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
     let contract = ContractWrapper::new(
-        cw4_group::contract::execute,
-        cw4_group::contract::instantiate,
-        cw4_group::contract::query,
+        tg4_engagement::contract::execute,
+        tg4_engagement::contract::instantiate,
+        tg4_engagement::contract::query,
     );
     Box::new(contract)
 }
@@ -140,8 +142,8 @@ pub struct Suite {
     pub members: Vec<Addr>,
     /// Address allowed to mint new tokens if any
     pub minter: Option<Addr>,
-    /// cw4 whitelist contract address
-    pub whitelist: Cw4Contract,
+    /// tg4 whitelist contract address
+    pub whitelist: Tg4Contract,
     /// trusted-token cash contract address
     pub cash: Cw20Contract,
 }
@@ -149,15 +151,15 @@ pub struct Suite {
 /// Utility functions sending messages to execute contracts.
 impl Suite {
     /// Adds member to whitelist
-    pub fn add_member(&mut self, addr: &Addr, weight: u64) -> Result<AppResponse> {
+    pub fn add_member(&mut self, addr: &Addr, points: u64) -> Result<AppResponse> {
         self.app
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
-                &Cw4ExecuteMsg::UpdateMembers {
+                &Tg4ExecuteMsg::UpdateMembers {
                     add: vec![Member {
                         addr: addr.to_string(),
-                        weight,
+                        points,
                     }],
                     remove: vec![],
                 },
@@ -172,7 +174,7 @@ impl Suite {
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
-                &Cw4ExecuteMsg::UpdateMembers {
+                &Tg4ExecuteMsg::UpdateMembers {
                     add: vec![],
                     remove: vec![addr.to_string()],
                 },
@@ -417,8 +419,8 @@ struct MemberConfig {
     addr: String,
     /// Innitial cash amount
     cash: u128,
-    /// Member weight in whitelist
-    weight: u64,
+    /// Member points in whitelist
+    points: u64,
 }
 
 #[derive(Default)]
@@ -436,11 +438,11 @@ impl Config {
         Self::default()
     }
 
-    pub fn with_member(mut self, addr: &str, cash: u128, weight: u64) -> Self {
+    pub fn with_member(mut self, addr: &str, cash: u128, points: u64) -> Self {
         self.members.push(MemberConfig {
             addr: addr.to_owned(),
             cash,
-            weight,
+            points,
         });
 
         self
@@ -458,7 +460,7 @@ impl Config {
     pub fn init(self) -> Result<Suite> {
         let mut app = mock_app();
         let owner = Addr::unchecked("owner");
-        let cw4_id = app.store_code(contract_group());
+        let tg4_id = app.store_code(contract_group());
         let cw20_id = app.store_code(contract_cw20());
 
         let (members, initial_cash): (Vec<_>, Vec<_>) = self
@@ -471,7 +473,7 @@ impl Config {
                 };
                 let member = Member {
                     addr: member.addr.to_string(),
-                    weight: member.weight,
+                    points: member.points,
                 };
                 Ok((member, initial_cash))
             })
@@ -481,11 +483,15 @@ impl Config {
 
         let whitelist = app
             .instantiate_contract(
-                cw4_id,
+                tg4_id,
                 owner.clone(),
-                &cw4_group::msg::InstantiateMsg {
+                &tg4_engagement::msg::InstantiateMsg {
                     admin: Some(owner.to_string()),
                     members: members.clone(),
+                    preauths_hooks: 10,
+                    preauths_slashing: 5,
+                    halflife: None,
+                    denom: "atom".to_owned(),
                 },
                 &[],
                 "Whitelist",
@@ -527,7 +533,7 @@ impl Config {
             owner,
             members,
             minter,
-            whitelist: Cw4Contract(whitelist),
+            whitelist: Tg4Contract(whitelist),
             cash: Cw20Contract(cash),
         })
     }
