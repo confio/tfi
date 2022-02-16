@@ -5,8 +5,6 @@ use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResp
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use tg4::{Member, Tg4Contract};
 use tg4_group::msg::ExecuteMsg as Tg4ExecuteMsg;
-use tg_bindings::TgradeMsg;
-use tg_bindings_test::TgradeApp;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
@@ -111,7 +109,7 @@ fn mock_app() -> App {
     App::default()
 }
 
-fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
+fn contract_group() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         tg4_group::contract::execute,
         tg4_group::contract::instantiate,
