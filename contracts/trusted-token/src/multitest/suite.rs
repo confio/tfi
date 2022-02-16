@@ -4,7 +4,7 @@ use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 use tg4::{Member, Tg4Contract};
-use tg4_engagement::msg::ExecuteMsg as Tg4ExecuteMsg;
+use tg4_group::msg::ExecuteMsg as Tg4ExecuteMsg;
 use tg_bindings::TgradeMsg;
 use tg_bindings_test::TgradeApp;
 
@@ -113,9 +113,9 @@ fn mock_app() -> App {
 
 fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
     let contract = ContractWrapper::new(
-        tg4_engagement::contract::execute,
-        tg4_engagement::contract::instantiate,
-        tg4_engagement::contract::query,
+        tg4_group::contract::execute,
+        tg4_group::contract::instantiate,
+        tg4_group::contract::query,
     );
     Box::new(contract)
 }
@@ -485,13 +485,9 @@ impl Config {
             .instantiate_contract(
                 tg4_id,
                 owner.clone(),
-                &tg4_engagement::msg::InstantiateMsg {
+                &tg4_group::msg::InstantiateMsg {
                     admin: Some(owner.to_string()),
                     members: members.clone(),
-                    preauths_hooks: 10,
-                    preauths_slashing: 5,
-                    halflife: None,
-                    denom: "atom".to_owned(),
                 },
                 &[],
                 "Whitelist",

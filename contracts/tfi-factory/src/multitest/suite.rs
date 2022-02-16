@@ -1,13 +1,15 @@
 use anyhow::{anyhow, Result};
+
 use cosmwasm_std::{coins, to_binary, Addr, BankMsg, Decimal, Empty, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ExecuteMsg};
-use tg4::{Cw4Contract, Member};
-use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::{Cw20HookMsg, ExecuteMsg as PairExecuteMsg};
+use tg4::{Member, Tg4Contract};
+use tg4_group::msg::ExecuteMsg as Tg4ExecuteMsg;
+use tg_bindings::TgradeMsg;
 
 const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
@@ -65,17 +67,17 @@ fn contract_token() -> Box<dyn Contract<Empty>> {
     ))
 }
 
-fn contract_group() -> Box<dyn Contract<Empty>> {
+fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
     Box::new(ContractWrapper::new(
-        cw4_group::contract::execute,
-        cw4_group::contract::instantiate,
-        cw4_group::contract::query,
+        tg4_group::contract::execute,
+        tg4_group::contract::instantiate,
+        tg4_group::contract::query,
     ))
 }
 
 /// Testing environment with:
 /// * single native token "btc"
-/// * single cw4-group used as whitelist
+/// * single tg4-group used as whitelist
 /// * single trusted-token "cash" using internal group
 /// * single tfi-factory
 /// * number of actors which are just address initialized with some "btc" and "cash"
@@ -92,8 +94,8 @@ pub struct Suite {
     pub owner: Addr,
     /// General purpose actors
     pub actors: Vec<Addr>,
-    /// cw4 whitelist contract address
-    pub whitelist: Cw4Contract,
+    /// tg4 whitelist contract address
+    pub whitelist: Tg4Contract,
     /// trusted-token cash contract address
     pub cash: Cw20Contract,
     /// tfi-factory contract address
@@ -147,10 +149,10 @@ impl Suite {
             .execute_contract(
                 self.owner.clone(),
                 self.whitelist.addr(),
-                &Cw4ExecuteMsg::UpdateMembers {
+                &Tg4ExecuteMsg::UpdateMembers {
                     add: vec![Member {
                         addr: addr.to_string(),
-                        weight: 10,
+                        points: 10,
                     }],
                     remove: vec![],
                 },
@@ -379,19 +381,19 @@ impl Config {
         members: impl Iterator<Item = Addr>,
         app: &mut App,
         owner: &Addr,
-        cw4_id: u64,
-    ) -> Result<Cw4Contract> {
+        tg4_id: u64,
+    ) -> Result<Tg4Contract> {
         let members = members
             .map(|addr| Member {
                 addr: addr.to_string(),
-                weight: 10,
+                points: 10,
             })
             .collect();
 
         app.instantiate_contract(
-            cw4_id,
+            tg4_id,
             owner.clone(),
-            &cw4_group::msg::InstantiateMsg {
+            &tg4_group::msg::InstantiateMsg {
                 admin: Some(owner.to_string()),
                 members,
             },
@@ -399,7 +401,7 @@ impl Config {
             "Whitelist",
             None,
         )
-        .map(Cw4Contract)
+        .map(Tg4Contract)
         .map_err(|err| anyhow!(err))
     }
 
@@ -453,7 +455,7 @@ impl Config {
     pub fn init(self) -> Result<Suite> {
         let mut app = mock_app();
         let owner = Addr::unchecked("owner");
-        let cw4_id = app.store_code(contract_group());
+        let tg4_id = app.store_code(contract_group());
         let cw20_id = app.store_code(contract_cw20());
         let token_id = app.store_code(contract_token());
         let pair_id = app.store_code(contract_pair());
@@ -464,7 +466,7 @@ impl Config {
             .iter()
             .filter(|actor| actor.whitelisted)
             .map(|actor| actor.addr.clone());
-        let whitelist = Self::init_whitelist(members, &mut app, &owner, cw4_id)?;
+        let whitelist = Self::init_whitelist(members, &mut app, &owner, tg4_id)?;
         let actors = actors.into_iter().map(|actor| actor.addr).collect();
         let cash = Self::init_cash(initial_cash, &whitelist.addr(), &mut app, &owner, token_id)?;
         let factory = Self::init_factory(pair_id, cw20_id, &mut app, &owner, factory_id)?;

@@ -297,35 +297,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw4"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41445666e3f6284c72f569b2240bb52d0add94bb448e169d30ae28fe000cfaeb"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw4-group"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db3389be9a6d350cc5ed9918af4070007c9acc360e515788a10885536b972764"
-dependencies = [
- "cosmwasm-std",
- "cw-controllers",
- "cw-storage-plus",
- "cw-utils",
- "cw2",
- "cw4",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "der"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -817,14 +788,15 @@ dependencies = [
  "cw2",
  "cw20",
  "cw20-base",
- "cw4-group",
  "derivative",
  "protobuf",
  "schemars",
  "serde",
  "tfi",
  "tfi-pair",
+ "tg-bindings 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tg4",
+ "tg4-group",
  "thiserror",
  "trusted-token",
 ]
@@ -866,6 +838,17 @@ dependencies = [
 [[package]]
 name = "tg-bindings"
 version = "0.6.0"
+dependencies = [
+ "base64",
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "sha2",
+]
+
+[[package]]
+name = "tg-bindings"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "602c0eb998778561fca6b57802c33fdc31f34538653a64db319f190a8e327151"
 dependencies = [
@@ -888,15 +871,13 @@ dependencies = [
  "cw-storage-plus",
  "schemars",
  "serde",
- "tg-bindings",
+ "tg-bindings 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 
 [[package]]
 name = "tg-utils"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "953bb54b7bd2e79bc514936469387b670c0b0adccb484557201b2a90558a7e49"
 dependencies = [
  "cosmwasm-std",
  "cw-controllers",
@@ -906,7 +887,7 @@ dependencies = [
  "schemars",
  "semver",
  "serde",
- "tg-bindings",
+ "tg-bindings 0.6.0",
  "tg4",
  "thiserror",
 ]
@@ -914,20 +895,16 @@ dependencies = [
 [[package]]
 name = "tg4"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05720ba94dd5c48807d03165d0f2c0a2b314a288cb1edc31cf3959bec003c2a2"
 dependencies = [
  "cosmwasm-std",
  "schemars",
  "serde",
- "tg-bindings",
+ "tg-bindings 0.6.0",
 ]
 
 [[package]]
-name = "tg4-engagement"
+name = "tg4-group"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7346580605b7eaea12794c4d95a4161ad331afbe74e0e03fc865fd7b0b871b25"
 dependencies = [
  "cosmwasm-std",
  "cw-controllers",
@@ -936,7 +913,7 @@ dependencies = [
  "cw2",
  "schemars",
  "serde",
- "tg-bindings",
+ "tg-bindings 0.6.0",
  "tg-utils",
  "tg4",
  "thiserror",
@@ -977,10 +954,10 @@ dependencies = [
  "derivative",
  "schemars",
  "serde",
- "tg-bindings",
+ "tg-bindings 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tg-bindings-test",
  "tg4",
- "tg4-engagement",
+ "tg4-group",
  "thiserror",
 ]
 
