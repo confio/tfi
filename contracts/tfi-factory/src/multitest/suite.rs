@@ -9,8 +9,6 @@ use tfi::factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::{Cw20HookMsg, ExecuteMsg as PairExecuteMsg};
 use tg4::{Member, Tg4Contract};
 use tg4_group::msg::ExecuteMsg as Tg4ExecuteMsg;
-use tg_bindings::TgradeMsg;
-use tg_bindings_test::TgradeApp;
 
 const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
@@ -68,7 +66,7 @@ fn contract_token() -> Box<dyn Contract<Empty>> {
     ))
 }
 
-fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
+fn contract_group() -> Box<dyn Contract<Empty>> {
     Box::new(ContractWrapper::new(
         tg4_group::contract::execute,
         tg4_group::contract::instantiate,
@@ -454,7 +452,7 @@ impl Config {
     }
 
     pub fn init(self) -> Result<Suite> {
-        //let mut app = mock_app();
+        let mut app = mock_app();
         let owner = Addr::unchecked("owner");
         let tg4_id = app.store_code(contract_group());
         let cw20_id = app.store_code(contract_cw20());
