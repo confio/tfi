@@ -2,7 +2,7 @@ use cw20_base::msg::InstantiateMarketingInfo;
 
 use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
-use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
+use cw_multi_test::{AppResponse, Contract, ContractWrapper, Executor};
 use tg4::{Member, Tg4Contract};
 use tg4_group::msg::ExecuteMsg as Tg4ExecuteMsg;
 use tg_bindings::TgradeMsg;
@@ -71,8 +71,8 @@ mod receiver {
         to_binary(&MESSAGES.load(deps.storage)?)
     }
 
-    pub fn contract() -> Box<dyn Contract<Empty>> {
-        let contract = ContractWrapper::new(execute, instantiate, query);
+    pub fn contract() -> Box<dyn Contract<TgradeMsg>> {
+        let contract = ContractWrapper::new_with_empty(execute, instantiate, query);
         Box::new(contract)
     }
 }
@@ -81,7 +81,7 @@ pub struct ReceiverContract(Addr);
 
 impl ReceiverContract {
     /// Helper for instantiating the contract
-    pub fn init(app: &mut App, owner: Addr) -> Result<Self> {
+    pub fn init(app: &mut TgradeApp, owner: Addr) -> Result<Self> {
         let id = app.store_code(receiver::contract());
         app.instantiate_contract(
             id,
@@ -100,15 +100,15 @@ impl ReceiverContract {
     }
 
     /// Helper for querying for stored messages
-    pub fn messages(&self, app: &App) -> Result<Vec<Cw20ReceiveMsg>> {
+    pub fn messages(&self, app: &TgradeApp) -> Result<Vec<Cw20ReceiveMsg>> {
         app.wrap()
             .query_wasm_smart(&self.0, &receiver::QueryMsg {})
             .map_err(|err| anyhow!(err))
     }
 }
 
-fn mock_app() -> App {
-    App::default()
+fn mock_app() -> TgradeApp {
+    TgradeApp::new("owner")
 }
 
 fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
@@ -120,8 +120,8 @@ fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
     Box::new(contract)
 }
 
-fn contract_cw20() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
+fn contract_cw20() -> Box<dyn Contract<TgradeMsg>> {
+    let contract = ContractWrapper::new_with_empty(
         crate::contract::execute,
         crate::contract::instantiate,
         crate::contract::query,
@@ -135,7 +135,7 @@ fn contract_cw20() -> Box<dyn Contract<Empty>> {
 pub struct Suite {
     /// Application mock
     #[derivative(Debug = "ignore")]
-    pub app: App,
+    pub app: TgradeApp,
     /// Special account for performing administrative execution
     pub owner: Addr,
     /// Members of whitelist
