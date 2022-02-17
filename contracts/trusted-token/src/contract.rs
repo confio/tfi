@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Response,
-    StdResult, Uint128,
+    StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::allowances::query_allowance;
@@ -10,8 +10,8 @@ use cw20_base::contract::{
 use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
 use cw20_base::state::{BALANCES, TOKEN_INFO};
 use cw20_base::ContractError as Cw20ContractError;
-use cw4::Cw4Contract;
 use cw_storage_plus::Bound;
+use tg4::Tg4Contract;
 
 use crate::error::ContractError;
 use crate::msg::{
@@ -48,7 +48,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
-    let contract = Cw4Contract(addr.clone());
+    let contract = Tg4Contract(addr.clone());
     // verify the whitelist contract is actually cw4
     contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
@@ -190,12 +190,12 @@ fn execute_clean_redeems(
         return Err(Cw20ContractError::Unauthorized {}.into());
     }
 
-    let keys: Vec<_> = REEDEMS
+    let keys = REEDEMS
         .keys(deps.storage, None, None, Order::Ascending)
-        .collect();
+        .collect::<Result<Vec<String>, StdError>>()?;
 
     for key in keys {
-        REEDEMS.remove(deps.storage, std::str::from_utf8(&key)?)
+        REEDEMS.remove(deps.storage, &key)
     }
 
     Ok(Response::new().add_attribute("action", "remove_all_redeems"))
@@ -340,7 +340,7 @@ fn query_all_redeems(
         .map(|redeem| {
             let (code, redeem) = redeem?;
             Ok(RedeemInfo {
-                code: String::from_utf8(code)?,
+                code,
                 sender: redeem.sender,
                 amount: redeem.amount,
                 memo: redeem.memo,
@@ -389,12 +389,12 @@ mod tests {
         QuerierWrapper, QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
     };
     use cw20_base::state::TokenInfo;
-    use cw4::{Cw4QueryMsg, MemberListResponse};
     use cw_storage_plus::Map;
+    use tg4::{MemberListResponse, Tg4QueryMsg};
 
     use std::marker::PhantomData;
 
-    const MEMBERS: Map<&Addr, u64> = Map::new(cw4::MEMBERS_KEY);
+    const MEMBERS: Map<&Addr, u64> = Map::new(tg4::MEMBERS_KEY);
 
     struct GroupQuerier {
         contract: String,
@@ -439,7 +439,7 @@ mod tests {
 
         fn query_wasm_smart(&self, msg: Binary) -> QuerierResult {
             match from_binary(&msg) {
-                Ok(Cw4QueryMsg::ListMembers { .. }) => {
+                Ok(Tg4QueryMsg::ListMembers { .. }) => {
                     let mlr = MemberListResponse { members: vec![] };
                     SystemResult::Ok(ContractResult::Ok(to_binary(&mlr).unwrap()))
                 }
@@ -480,7 +480,7 @@ mod tests {
         let api = MockApi::default();
         let mut storage = MockStorage::new();
         WHITELIST
-            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .save(&mut storage, &Tg4Contract(whitelist_addr))
             .unwrap();
         let deps = Deps {
             storage: &storage,
@@ -509,7 +509,7 @@ mod tests {
         let mut storage = MockStorage::new();
 
         WHITELIST
-            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .save(&mut storage, &Tg4Contract(whitelist_addr))
             .unwrap();
 
         let mut deps = OwnedDeps {
@@ -562,7 +562,7 @@ mod tests {
         let mut storage = MockStorage::new();
 
         WHITELIST
-            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .save(&mut storage, &Tg4Contract(whitelist_addr))
             .unwrap();
 
         let mut deps = OwnedDeps {
@@ -611,7 +611,7 @@ mod tests {
         let mut storage = MockStorage::new();
 
         WHITELIST
-            .save(&mut storage, &Cw4Contract(whitelist_addr))
+            .save(&mut storage, &Tg4Contract(whitelist_addr))
             .unwrap();
 
         let mut deps = OwnedDeps {

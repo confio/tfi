@@ -276,7 +276,7 @@ impl Suite {
         assert_eq!(
             btc_balance,
             coin(btc, "btc"),
-            "Btc balace missmatch, expected: {}, actual: {}",
+            "Btc balance mismatch, expected: {}, actual: {}",
             btc,
             btc_balance.amount
         );
@@ -297,7 +297,7 @@ impl Suite {
             cw20::BalanceResponse {
                 balance: Uint128::new(cash)
             },
-            "Cash balance missmatch, expected: {}, actual: {}",
+            "Cash balance mismatch, expected: {}, actual: {}",
             cash,
             cash_balance.balance
         );
@@ -619,7 +619,7 @@ fn swap() {
     let mut suite = SuiteConfig::new()
         .with_liquidity_provider("liquidity-provider", 2000, 6000)
         .with_trader("trader", 1000, 0)
-        .with_trader("trader-recv", 0, 0)
+        .with_trader("trader-recv", 1, 1)
         .init()
         .unwrap();
 
@@ -637,7 +637,7 @@ fn swap() {
     suite
         .assert_balances(&lp, 0, 0, 3464)
         .assert_balances(&trader, 1000, 0, 0)
-        .assert_balances(&trader_recv, 0, 0, 0)
+        .assert_balances(&trader_recv, 1, 1, 0)
         .assert_balances(&pair, 2000, 6000, 0);
 
     suite.swap_btc(&trader, 1000, None, None, None).unwrap();
@@ -650,7 +650,7 @@ fn swap() {
     suite
         .assert_balances(&lp, 0, 0, 3464)
         .assert_balances(&trader, 0, 1994, 0)
-        .assert_balances(&trader_recv, 0, 0, 0)
+        .assert_balances(&trader_recv, 1, 1, 0)
         .assert_balances(&pair, 3000, 4006, 0);
 
     suite
@@ -665,7 +665,7 @@ fn swap() {
     suite
         .assert_balances(&lp, 0, 0, 3464)
         .assert_balances(&trader, 0, 994, 0)
-        .assert_balances(&trader_recv, 599, 0, 0)
+        .assert_balances(&trader_recv, 600, 1, 0)
         .assert_balances(&pair, 2401, 5006, 0);
 
     suite.withdraw_liquidity(&lp, 3464).unwrap();
@@ -679,7 +679,7 @@ fn swap() {
     suite
         .assert_balances(&lp, 2401, 5006, 0)
         .assert_balances(&trader, 0, 994, 0)
-        .assert_balances(&trader_recv, 599, 0, 0)
+        .assert_balances(&trader_recv, 600, 1, 0)
         .assert_balances(&pair, 0, 0, 0);
 }
 

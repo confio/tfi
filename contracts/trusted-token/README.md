@@ -53,7 +53,7 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
     sender: &Addr,
     addresses: &[&str],
 ) -> Result<(), ContractError> {
-    let whitelist: Cw4Contract = WHITELIST.load(deps.storage)?;
+    let whitelist: Tg4Contract = WHITELIST.load(deps.storage)?;
     if whitelist.is_member(&deps.querier, sender)?.is_none() {
         return Err(ContractError::Unauthorized {});
     }

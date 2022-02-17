@@ -1,10 +1,10 @@
 use cosmwasm_std::{Addr, Timestamp, Uint128};
-use cw4::Cw4Contract;
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tg4::Tg4Contract;
 
-pub const WHITELIST: Item<Cw4Contract> = Item::new("whitelist");
+pub const WHITELIST: Item<Tg4Contract> = Item::new("whitelist");
 pub const REEDEMS: Map<&str, Redeem> = Map::new("redeems");
 
 /// Entry about redeem which had place
