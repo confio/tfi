@@ -1,6 +1,6 @@
 use cw20_base::msg::InstantiateMarketingInfo;
 
-use cosmwasm_std::{to_binary, Addr, Binary, Empty, Response, StdError, Uint128};
+use cosmwasm_std::{to_binary, Addr, Binary, Response, StdError, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw_multi_test::{AppResponse, Contract, ContractWrapper, Executor};
 use tg4::{Member, Tg4Contract};
