@@ -167,9 +167,9 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.2.2"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b32a398eb1ccfbe7e4f452bc749c44d38dd732e9a253f19da224c416f00ee7f4"
+checksum = "f83bd3bb4314701c568e340cd8cf78c975aa0ca79e03d3f6d1677d5b0c9c0c03"
 dependencies = [
  "generic-array",
  "rand_core 0.6.3",
@@ -770,7 +770,7 @@ dependencies = [
 
 [[package]]
 name = "tfi"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -783,7 +783,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-factory"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -808,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-mocks"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "tfi-pair"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "trusted-token"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
