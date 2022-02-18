@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 
-use cosmwasm_std::{coins, to_binary, Addr, BankMsg, Decimal, Empty, Uint128};
+use cosmwasm_std::{coins, to_binary, Addr, BankMsg, Decimal, Uint128};
 use cw20::{Cw20Coin, Cw20Contract, Cw20ExecuteMsg};
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw_multi_test::{Contract, ContractWrapper, Executor};
 use derivative::Derivative;
 use tfi::asset::{Asset, AssetInfo, PairInfo};
 use tfi::factory::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -15,10 +15,11 @@ use tg_bindings_test::TgradeApp;
 const TEST_RESERVE: &str = "reserve";
 const DENOM: &str = "btc";
 
-fn mock_app() -> App {
+fn mock_app() -> TgradeApp {
     // Instantiates custom account (TEST_RESERVE) with arbitrary amount
     // of tokens to fill any custom account later needed in tests
-    AppBuilder::new_custom().build(|router, _, storage| {
+    let mut app = TgradeApp::new("owner");
+    app.init_modules(|router, _, storage| {
         router
             .bank
             .init_balance(
@@ -27,41 +28,42 @@ fn mock_app() -> App {
                 coins(100000, DENOM),
             )
             .unwrap();
-    })
+    });
+    app
 }
 
-fn contract_factory() -> Box<dyn Contract<Empty>> {
+fn contract_factory() -> Box<dyn Contract<TgradeMsg>> {
     Box::new(
-        ContractWrapper::new(
+        ContractWrapper::new_with_empty(
             crate::contract::execute,
             crate::contract::instantiate,
             crate::contract::query,
         )
-        .with_reply(crate::contract::reply),
+        .with_reply_empty(crate::contract::reply),
     )
 }
 
-fn contract_pair() -> Box<dyn Contract<Empty>> {
+fn contract_pair() -> Box<dyn Contract<TgradeMsg>> {
     Box::new(
-        ContractWrapper::new(
+        ContractWrapper::new_with_empty(
             tfi_pair::contract::execute,
             tfi_pair::contract::instantiate,
             tfi_pair::contract::query,
         )
-        .with_reply(tfi_pair::contract::reply),
+        .with_reply_empty(tfi_pair::contract::reply),
     )
 }
 
-fn contract_cw20() -> Box<dyn Contract<Empty>> {
-    Box::new(ContractWrapper::new(
+fn contract_cw20() -> Box<dyn Contract<TgradeMsg>> {
+    Box::new(ContractWrapper::new_with_empty(
         cw20_base::contract::execute,
         cw20_base::contract::instantiate,
         cw20_base::contract::query,
     ))
 }
 
-fn contract_token() -> Box<dyn Contract<Empty>> {
-    Box::new(ContractWrapper::new(
+fn contract_token() -> Box<dyn Contract<TgradeMsg>> {
+    Box::new(ContractWrapper::new_with_empty(
         trusted_token::contract::execute,
         trusted_token::contract::instantiate,
         trusted_token::contract::query,
@@ -90,7 +92,7 @@ fn contract_group() -> Box<dyn Contract<TgradeMsg>> {
 pub struct Suite {
     /// Application mock
     #[derivative(Debug = "ignore")]
-    pub app: App,
+    pub app: TgradeApp,
     /// Special account for performing administrative executions
     pub owner: Addr,
     /// General purpose actors
@@ -196,6 +198,8 @@ impl Suite {
         btc: u128,
         cash: u128,
     ) -> Result<&mut Self> {
+        let btc_info = self.btc();
+        let cash_info = self.cash();
         self.app
             .execute_contract(
                 liquidity_provider.clone(),
@@ -203,11 +207,11 @@ impl Suite {
                 &PairExecuteMsg::ProvideLiquidity {
                     assets: [
                         Asset {
-                            info: self.btc(),
+                            info: btc_info,
                             amount: btc.into(),
                         },
                         Asset {
-                            info: self.cash(),
+                            info: cash_info,
                             amount: cash.into(),
                         },
                     ],
@@ -344,7 +348,10 @@ impl Config {
     /// Actors data are pairs of:
     /// * actor address
     /// * flag if actor should be initiallt whitelisted
-    fn init_actors(actors: Vec<ActorConfig>, app: &mut App) -> Result<(Vec<Actor>, Vec<Cw20Coin>)> {
+    fn init_actors(
+        actors: Vec<ActorConfig>,
+        app: &mut TgradeApp,
+    ) -> Result<(Vec<Actor>, Vec<Cw20Coin>)> {
         Ok(actors
             .into_iter()
             .map(|actor| -> Result<_> {
@@ -380,7 +387,7 @@ impl Config {
     /// Initializes whitelist contract basing on initial members
     pub fn init_whitelist(
         members: impl Iterator<Item = Addr>,
-        app: &mut App,
+        app: &mut TgradeApp,
         owner: &Addr,
         tg4_id: u64,
     ) -> Result<Tg4Contract> {
@@ -410,7 +417,7 @@ impl Config {
     fn init_cash(
         initial_balances: Vec<Cw20Coin>,
         whitelist: &Addr,
-        app: &mut App,
+        app: &mut TgradeApp,
         owner: &Addr,
         cw20_id: u64,
     ) -> Result<Cw20Contract> {
@@ -438,7 +445,7 @@ impl Config {
     fn init_factory(
         pair_id: u64,
         cw20_id: u64,
-        app: &mut App,
+        app: &mut TgradeApp,
         owner: &Addr,
         factory_id: u64,
     ) -> Result<Addr> {
@@ -454,7 +461,7 @@ impl Config {
     }
 
     pub fn init(self) -> Result<Suite> {
-        //let mut app = mock_app();
+        let mut app = mock_app();
         let owner = Addr::unchecked("owner");
         let tg4_id = app.store_code(contract_group());
         let cw20_id = app.store_code(contract_cw20());
