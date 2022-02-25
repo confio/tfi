@@ -153,7 +153,7 @@ pub fn execute_create_pair(
         code_id: config.pair_code_id,
         funds: vec![],
         admin: None,
-        label: pair_name.clone(),
+        label: "Tgrade finance trading pair".to_string(),
         msg: to_binary(
             &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
         )?,

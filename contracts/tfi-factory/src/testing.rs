@@ -166,7 +166,7 @@ fn create_pair() {
                 msg: to_binary(&PairInstantiateMsg::new(asset_infos.clone(), 123u64)).unwrap(),
                 code_id: 321u64,
                 funds: vec![],
-                label: "asset0000-asset0001".to_string(),
+                label: "Tgrade finance trading pair".to_string(),
                 admin: None,
             }
             .into()
@@ -294,7 +294,7 @@ fn custom_default_commission() {
                 .unwrap(),
                 code_id: 321u64,
                 funds: vec![],
-                label: "asset0000-asset0001".to_string(),
+                label: "Tgrade finance trading pair".to_string(),
                 admin: None,
             }
             .into()
@@ -377,7 +377,7 @@ fn custom_pair_commission() {
                 .unwrap(),
                 code_id: 321u64,
                 funds: vec![],
-                label: "asset0000-asset0001".to_string(),
+                label: "Tgrade finance trading pair".to_string(),
                 admin: None,
             }
             .into()
