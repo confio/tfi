@@ -2,7 +2,11 @@
 
 ## [Unreleased](https://github.com/confio/tfi/tree/HEAD)
 
-[Full Changelog](https://github.com/confio/tfi/compare/v0.3.0...HEAD)
+[Full Changelog](https://github.com/confio/tfi/compare/v0.3.1...HEAD)
+
+## [v0.3.1](https://github.com/confio/tfi/tree/v0.3.1) (2022-02-28)
+
+[Full Changelog](https://github.com/confio/tfi/compare/v0.3.0...v0.3.1)
 
 **Fixed bugs:**
 
