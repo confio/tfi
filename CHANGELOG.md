@@ -4,6 +4,14 @@
 
 [Full Changelog](https://github.com/confio/tfi/compare/v0.3.0...HEAD)
 
+**Fixed bugs:**
+
+- Change tfi-pair instance label to fixed string [\#69](https://github.com/confio/tfi/pull/69) ([maurolacy](https://github.com/maurolacy))
+
+**Merged pull requests:**
+
+- Add changelog and script to regenerate it [\#67](https://github.com/confio/tfi/pull/67) ([ueco-jb](https://github.com/ueco-jb))
+
 ## [v0.3.0](https://github.com/confio/tfi/tree/v0.3.0) (2022-02-17)
 
 [Full Changelog](https://github.com/confio/tfi/compare/v0.2.2...v0.3.0)
@@ -16,6 +24,7 @@
 
 **Merged pull requests:**
 
+- Update contract's version to 0.3.0 [\#66](https://github.com/confio/tfi/pull/66) ([ueco-jb](https://github.com/ueco-jb))
 - Replace cw4 and cw4-group contracts with tg4 and tg4-group [\#65](https://github.com/confio/tfi/pull/65) ([ueco-jb](https://github.com/ueco-jb))
 - tfi-pair: Better error messages for spread and slippage exceeding [\#63](https://github.com/confio/tfi/pull/63) ([hashedone](https://github.com/hashedone))
 - Ci update rust [\#62](https://github.com/confio/tfi/pull/62) ([maurolacy](https://github.com/maurolacy))
