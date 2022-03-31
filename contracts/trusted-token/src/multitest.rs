@@ -13,15 +13,15 @@ use cosmwasm_std::testing::{MockApi, MockStorage};
 
 /// Compares if error is as expected
 ///
-/// Unfortunatelly, error types information is lost, as in multitest every error is just converted
+/// Unfortunately, error types information is lost, as in multitest every error is just converted
 /// to its string representation. To solve this issue and still be able to reasonably test returned
 /// error, but to avoid maintaining error string validation, errors are passed strongly typed, but
-/// verified on their representation level. Additionally when error doesn't match, the actuall
+/// verified on their representation level. Additionally when error doesn't match, the actual
 /// error is printed in debug form so additional `anyhow` information is displayed.
 #[track_caller]
 fn assert_error(err: Error, expected: ContractError) {
     assert_eq!(
-        err.to_string(),
+        err.root_cause().to_string(),
         expected.to_string(),
         "received error {:?} while expected {:?}",
         err,
