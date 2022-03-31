@@ -1,18 +1,19 @@
 mod suite;
 
 use anyhow::Error;
+use cosmwasm_std::Empty;
 
 /// Compares if error is as expected
 ///
-/// Unfortunatelly, error types information is lost, as in multitest every error is just converted
+/// Unfortunately, error types information is lost, as in multitest every error is just converted
 /// to its string representation. To solve this issue and still be able to reasonably test returned
 /// error, but to avoid maintaining error string validation, errors are passed strongly typed, but
-/// verified on their representation level. Additionally when error doesn't match, the actuall
+/// verified on their representation level. Additionally when error doesn't match, the actual
 /// error is printed in debug form so additional `anyhow` information is displayed.
 #[track_caller]
 fn assert_error(err: Error, expected: impl ToString + std::fmt::Debug) {
     assert_eq!(
-        err.to_string(),
+        err.root_cause().to_string(),
         expected.to_string(),
         "received error {:?} while expected {:?}",
         err,
@@ -57,7 +58,7 @@ fn everyone_whitelisted() {
         .swap_cash(&pair, &trader, 1000)
         .unwrap();
 
-    let share = lt.balance(&suite.app, &lp).unwrap();
+    let share = lt.balance::<_, _, Empty>(&suite.app, &lp).unwrap();
 
     suite
         .withdraw_liquidity(&pair, &lt.addr(), &lp, share.into())
