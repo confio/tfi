@@ -2,7 +2,19 @@
 
 ## [Unreleased](https://github.com/confio/tfi/tree/HEAD)
 
-[Full Changelog](https://github.com/confio/tfi/compare/v0.3.1...HEAD)
+[Full Changelog](https://github.com/confio/tfi/compare/v0.3.2...HEAD)
+
+## [v0.3.2](https://github.com/confio/tfi/tree/v0.3.2) (2022-04-04)
+
+[Full Changelog](https://github.com/confio/tfi/compare/v0.3.1...v0.3.2)
+
+**Closed issues:**
+
+- Set same "migrator" address for pair contracts as factory has [\#71](https://github.com/confio/tfi/issues/71)
+
+**Merged pull requests:**
+
+- Update to cw plus 0.13 [\#72](https://github.com/confio/tfi/pull/72) ([maurolacy](https://github.com/maurolacy))
 
 ## [v0.3.1](https://github.com/confio/tfi/tree/v0.3.1) (2022-02-28)
 
