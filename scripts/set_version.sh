@@ -29,7 +29,8 @@ if [[ -n "$CHANGES_IN_REPO" ]]; then
 fi
 
 NEW="$1"
-OLD=$(sed -n -e 's/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' packages/tfi/Cargo.toml)
+OLD_CARGO=$(ls -1 */*/Cargo.toml | tail -1)
+OLD=$(sed -n -e 's/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' $OLD_CARGO)
 echo "Updating old version $OLD to new version $NEW ..."
 
 FILES_MODIFIED=()
