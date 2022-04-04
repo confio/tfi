@@ -1,6 +1,6 @@
 [package]
 name = "tfi"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Confio GmbH"]
 edition = "2018"
 description = "Common tfi types"
@@ -24,4 +24,4 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0-beta6"
-tfi-mocks = { path = "../mocks", version = "0.3.1" }
+tfi-mocks = { path = "../mocks", version = "0.3.2" }

@@ -1,14 +1,14 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
-command -v shellcheck > /dev/null && shellcheck "$0"
+command -v shellcheck >/dev/null && shellcheck "$0"
 
 function print_usage() {
-  echo "Usage: $0 NEW_VERSION"
-  echo ""
-  echo "e.g. $0 0.8.0"
+  echo "Usage: $0 [-h|--help] <new_version>"
+  echo "E.g.: $0 0.8.0"
 }
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]
+then
     print_usage
     exit 1
 fi
@@ -21,7 +21,7 @@ if [[ "$(realpath "$SCRIPT_DIR/..")" != "$(pwd)" ]]; then
 fi
 
 # Ensure repo is not dirty
-CHANGES_IN_REPO=$(git status --porcelain)
+CHANGES_IN_REPO=$(git status --porcelain --untracked-files=no)
 if [[ -n "$CHANGES_IN_REPO" ]]; then
     echo "Repository is dirty. Showing 'git status' and 'git --no-pager diff' for debugging now:"
     git status && git --no-pager diff
@@ -29,7 +29,8 @@ if [[ -n "$CHANGES_IN_REPO" ]]; then
 fi
 
 NEW="$1"
-OLD=$(sed -n -e 's/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' packages/tfi/Cargo.toml)
+OLD_CARGO=$(ls -1 */*/Cargo.toml | tail -1)
+OLD=$(sed -n -e 's/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' $OLD_CARGO)
 echo "Updating old version $OLD to new version $NEW ..."
 
 FILES_MODIFIED=()

@@ -1,6 +1,6 @@
 [package]
 name = "tfi-factory"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Confio GmbH", "Terraform Labs, PTE."]
 edition = "2018"
 description = "A tfi factory contract - auto pair contract generator and also directory for all pairs"
@@ -23,7 +23,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-tfi = { path = "../../packages/tfi", default-features = false, version = "0.3.1"}
+tfi = { path = "../../packages/tfi", default-features = false, version = "0.3.2"}
 cosmwasm-std = "1.0.0-beta6"
 cw2 = "0.13.1"
 cw-storage-plus = "0.13.1"
@@ -37,8 +37,8 @@ cosmwasm-schema = "1.0.0-beta6"
 cosmwasm-storage = "1.0.0-beta6"
 anyhow = { version = "1", features = ["backtrace"] }
 cw-multi-test = "0.13.1"
-tfi-pair = { path = "../tfi-pair", version = "0.3.1" }
-trusted-token = { path = "../trusted-token", version = "0.3.1" }
+tfi-pair = { path = "../tfi-pair", version = "0.3.2" }
+trusted-token = { path = "../trusted-token", version = "0.3.2" }
 derivative = "2"
 tg4 = "0.6.2"
 tg4-group = { version = "0.6.2", features = ["library"] }
