@@ -6,8 +6,8 @@ use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
 
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, ContractResult, Decimal, Reply, ReplyOn, StdError, SubMsg,
-    SubMsgExecutionResponse, WasmMsg,
+    attr, from_binary, to_binary, Addr, Decimal, Reply, ReplyOn, StdError, SubMsg,
+    SubMsgExecutionResponse, SubMsgResult, WasmMsg,
 };
 use tfi::asset::{AssetInfo, PairInfo};
 use tfi::factory::{ConfigResponse, ExecuteCreatePair, ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -206,7 +206,7 @@ fn reply_test() {
 
     let reply_msg = Reply {
         id: 1,
-        result: ContractResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgExecutionResponse {
             events: vec![],
             data: Some(vec![10, 8, 112, 97, 105, 114, 48, 48, 48, 48].into()),
         }),

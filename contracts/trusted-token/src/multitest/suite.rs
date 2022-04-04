@@ -21,13 +21,13 @@ mod receiver {
 
     pub const MESSAGES: Item<Vec<Cw20ReceiveMsg>> = Item::new("messages");
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct InstantiateMsg {}
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Clone, Debug)]
     pub struct QueryMsg {}
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Clone, Debug)]
     #[serde(rename_all = "snake_case")]
     pub enum ExecuteMsg {
         Receive(Cw20ReceiveMsg),
@@ -386,13 +386,15 @@ impl Suite {
 
     /// Return cash contract metadata
     pub fn meta(&self) -> Result<TokenInfoResponse> {
-        self.cash.meta(&self.app).map_err(|err| anyhow!(err))
+        self.cash
+            .meta::<_, Empty>(&self.app)
+            .map_err(|err| anyhow!(err))
     }
 
     /// Return given address cash balance
     pub fn balance(&self, account: &Addr) -> Result<u128> {
         self.cash
-            .balance(&self.app, account)
+            .balance::<_, _, Empty>(&self.app, account)
             .map(Into::into)
             .map_err(|err| anyhow!(err))
     }
@@ -405,7 +407,7 @@ impl Suite {
     /// Returns allowance on cash
     pub fn allowance(&self, owner: &Addr, spender: &Addr) -> Result<u128> {
         self.cash
-            .allowance(&self.app, owner.clone(), spender.clone())
+            .allowance::<_, _, _, Empty>(&self.app, owner.clone(), spender.clone())
             .map(|allowance| allowance.allowance.into())
             .map_err(|err| anyhow!(err))
     }

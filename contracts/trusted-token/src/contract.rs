@@ -332,7 +332,7 @@ fn query_all_redeems(
     let redeems = REEDEMS
         .range(
             deps.storage,
-            start.map(Bound::exclusive),
+            start.as_ref().map(|s| Bound::exclusive(s.as_str())),
             None,
             Order::Ascending,
         )
