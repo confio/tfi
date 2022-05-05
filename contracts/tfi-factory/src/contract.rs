@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    to_binary, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Empty, Env, MessageInfo,
+    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
@@ -119,7 +119,7 @@ pub fn execute_update_config(
 // Anyone can execute it to create swap pair
 pub fn execute_create_pair(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
     commission: Option<Decimal>,
@@ -148,11 +148,16 @@ pub fn execute_create_pair(
         },
     )?;
 
+    let query = QueryRequest::<Empty>::Wasm(WasmQuery::ContractInfo {
+        contract_addr: env.contract.address.to_string(),
+    });
+    let info = deps.querier.query::<ContractInfoResponse>(&query)?;
+
     let pair_name = format!("{}-{}", asset_infos[0], asset_infos[1]);
     let msg = WasmMsg::Instantiate {
         code_id: config.pair_code_id,
         funds: vec![],
-        admin: None,
+        admin: info.admin,
         label: "Tgrade finance trading pair".to_string(),
         msg: to_binary(
             &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
