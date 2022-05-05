@@ -13,7 +13,7 @@ pub struct Config {
     pub default_commission: Decimal,
     // Our migrate admin (part of wasm's `ContractInfo`).
     // Stored here for convenience (used during instantiation of pair contracts)
-    pub migrate_admin: Option<String>,
+    pub migrate_admin: Option<Option<String>>,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
