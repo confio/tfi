@@ -2,18 +2,15 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, marker::PhantomData};
 
-use cosmwasm_std::testing::{MockApi, MockStorage, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
-    QuerierResult, QueryRequest, Storage, SystemError, SystemResult, WasmQuery,
+    from_slice, to_binary, Addr, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-
-use cw_storage_plus::Item;
 
 use tfi::asset::{AssetInfo, PairInfo};
 
 // Used for the create pair test
-pub const FACTORY_CONTRACT: Item<String> = Item::new("contract_info");
 pub const FACTORY_ADMIN: &str = "migrate_admin";
 
 // Copied here because this struct is non-exhaustive.
@@ -31,97 +28,15 @@ pub struct ContractInfoResponse {
     pub ibc_port: Option<String>,
 }
 
-pub struct FactoryQuerier {
-    contract: String,
-    storage: MockStorage,
-}
-
-impl FactoryQuerier {
-    pub fn new(contract: &Addr, token_version: &str) -> Self {
-        let mut storage = MockStorage::new();
-        FACTORY_CONTRACT
-            .save(&mut storage, &token_version.to_string())
-            .unwrap();
-
-        FactoryQuerier {
-            contract: contract.to_string(),
-            storage,
-        }
-    }
-
-    fn handle_query(&self, request: QueryRequest<Empty>) -> QuerierResult {
-        match request {
-            QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
-                self.query_wasm(contract_addr, key)
-            }
-            QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
-                SystemResult::Err(SystemError::UnsupportedRequest {
-                    kind: "WasmQuery::Smart".to_string(),
-                })
-            }
-            QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr }) => {
-                self.query_contract_info(contract_addr)
-            }
-            _ => SystemResult::Err(SystemError::UnsupportedRequest {
-                kind: "not wasm".to_string(),
-            }),
-        }
-    }
-
-    // TODO: we should be able to add a custom wasm handler to MockQuerier from cosmwasm_std::mock
-    fn query_wasm(&self, contract_addr: String, key: Binary) -> QuerierResult {
-        if contract_addr != self.contract {
-            SystemResult::Err(SystemError::NoSuchContract {
-                addr: contract_addr,
-            })
-        } else {
-            let bin = self.storage.get(&key).unwrap_or_default();
-            SystemResult::Ok(ContractResult::Ok(bin.into()))
-        }
-    }
-
-    fn query_contract_info(&self, contract_addr: String) -> QuerierResult {
-        if contract_addr != self.contract {
-            SystemResult::Err(SystemError::NoSuchContract {
-                addr: contract_addr,
-            })
-        } else {
-            let res = ContractInfoResponse {
-                code_id: 1,
-                creator: "creator".into(),
-                admin: Some(FACTORY_ADMIN.into()),
-                pinned: false,
-                ibc_port: None,
-            };
-            let bin = to_binary(&res).unwrap();
-            SystemResult::Ok(ContractResult::Ok(bin))
-        }
-    }
-}
-
-impl Querier for FactoryQuerier {
-    fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<Empty> = match from_slice(bin_request) {
-            Ok(v) => v,
-            Err(e) => {
-                return SystemResult::Err(SystemError::InvalidRequest {
-                    error: format!("Parsing query request: {:?}", e),
-                    request: bin_request.into(),
-                })
-            }
-        };
-        self.handle_query(request)
-    }
-}
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
 /// this uses our CustomQuerier.
 pub fn mock_dependencies(
-    _contract_balance: &[Coin],
+    contract_balance: &[Coin],
 ) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
-    let custom_querier: WasmMockQuerier = WasmMockQuerier::new(FactoryQuerier::new(
+    let custom_querier: WasmMockQuerier = WasmMockQuerier::new(
         &Addr::unchecked(MOCK_CONTRACT_ADDR),
-        "0.9",
-    ));
+        MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)]),
+    );
 
     OwnedDeps {
         api: MockApi::default(),
@@ -132,7 +47,8 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    base: FactoryQuerier,
+    base: MockQuerier,
+    contract: String,
     tfi_pair_querier: TfiPairQuerier,
 }
 
@@ -203,18 +119,47 @@ impl WasmMockQuerier {
                         .with_commission(pair_info.commission),
                     )))
                 } else {
-                    panic!("DO NOT ENTER HERE")
+                    SystemResult::Err(SystemError::UnsupportedRequest {
+                        kind: "key not supported".to_string(),
+                    })
                 }
             }
-            _ => self.base.handle_query(request.clone()),
+            QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
+                SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "WasmQuery::Smart".to_string(),
+                })
+            }
+            QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr }) => {
+                self.query_contract_info(contract_addr)
+            }
+            _ => self.base.handle_query(request),
+        }
+    }
+
+    fn query_contract_info(&self, contract_addr: &str) -> QuerierResult {
+        if contract_addr != self.contract {
+            SystemResult::Err(SystemError::NoSuchContract {
+                addr: contract_addr.into(),
+            })
+        } else {
+            let res = ContractInfoResponse {
+                code_id: 1,
+                creator: "creator".into(),
+                admin: Some(FACTORY_ADMIN.into()),
+                pinned: false,
+                ibc_port: None,
+            };
+            let bin = to_binary(&res).unwrap();
+            SystemResult::Ok(ContractResult::Ok(bin))
         }
     }
 }
 
 impl WasmMockQuerier {
-    pub fn new(base: FactoryQuerier) -> Self {
+    pub fn new(contract: &Addr, base: MockQuerier) -> Self {
         WasmMockQuerier {
             base,
+            contract: contract.to_string(),
             tfi_pair_querier: TfiPairQuerier::default(),
         }
     }
@@ -223,10 +168,4 @@ impl WasmMockQuerier {
     pub fn with_tfi_pairs(&mut self, pairs: &[(&String, &PairInfo)]) {
         self.tfi_pair_querier = TfiPairQuerier::new(pairs);
     }
-
-    // pub fn with_balance(&mut self, balances: &[(&HumanAddr, &[Coin])]) {
-    //     for (addr, balance) in balances {
-    //         self.base.update_balance(addr, balance.to_vec());
-    //     }
-    // }
 }
