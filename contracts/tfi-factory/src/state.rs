@@ -11,8 +11,8 @@ pub struct Config {
     pub pair_code_id: u64,
     pub token_code_id: u64,
     pub default_commission: Decimal,
-    // Our migrate admin (part of wasm ContractInfo).
-    // Stored here for convenience (used for instantiation of pair contracts)
+    // Our migrate admin (part of wasm's `ContractInfo`).
+    // Stored here for convenience (used during instantiation of pair contracts)
     pub migrate_admin: Option<String>,
 }
 

@@ -10,11 +10,11 @@ use cosmwasm_std::{
 
 use tfi::asset::{AssetInfo, PairInfo};
 
-// Used for the create pair test
+// Used for the create pairs migration admin
 pub const FACTORY_ADMIN: &str = "migrate_admin";
 
 // Copied here because this struct is non-exhaustive.
-// Needs new `new_with_admin()` helper
+// Needs a new `new_with_admin()` helper
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ContractInfoResponse {
     pub code_id: u64,
@@ -80,7 +80,7 @@ impl Querier for WasmMockQuerier {
             Ok(v) => v,
             Err(e) => {
                 return SystemResult::Err(SystemError::InvalidRequest {
-                    error: format!("Parsing query request: {}", e),
+                    error: format!("Parsing query request: {:#?}", e),
                     request: bin_request.into(),
                 });
             }
@@ -120,7 +120,7 @@ impl WasmMockQuerier {
                     )))
                 } else {
                     SystemResult::Err(SystemError::UnsupportedRequest {
-                        kind: "key not supported".to_string(),
+                        kind: format!("key {:#?} not supported", key),
                     })
                 }
             }
