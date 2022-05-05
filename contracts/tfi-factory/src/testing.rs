@@ -1,17 +1,127 @@
-use crate::contract::{execute, instantiate, query, reply};
-use crate::mock_querier::mock_dependencies;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
-use crate::error::ContractError;
-use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
-
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage};
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, Decimal, Reply, ReplyOn, StdError, SubMsg,
-    SubMsgExecutionResponse, SubMsgResult, WasmMsg,
+    attr, from_binary, from_slice, to_binary, Addr, Binary, ContractResult, Decimal, Empty,
+    OwnedDeps, Querier, QuerierResult, QueryRequest, Reply, ReplyOn, StdError, Storage, SubMsg,
+    SubMsgExecutionResponse, SubMsgResult, SystemError, SystemResult, WasmMsg, WasmQuery,
 };
+
+use cw_storage_plus::Item;
+
 use tfi::asset::{AssetInfo, PairInfo};
 use tfi::factory::{ConfigResponse, ExecuteCreatePair, ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::InstantiateMsg as PairInstantiateMsg;
+
+use crate::contract::{execute, instantiate, query, reply};
+use crate::error::ContractError;
+use crate::mock_querier::mock_dependencies;
+use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
+
+// Used for the create pair test
+pub const FACTORY_CONTRACT: Item<String> = Item::new("contract_info");
+pub const FACTORY_ADDR: &str = "cosmos2contract";
+pub const FACTORY_ADMIN: &str = "migrate_admin";
+
+// Copied here because this struct is non-exhaustive.
+// Needs new `new_with_admin()` helper
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ContractInfoResponse {
+    pub code_id: u64,
+    /// address that instantiated this contract
+    pub creator: String,
+    /// admin who can run migrations (if any)
+    pub admin: Option<String>,
+    /// if set, the contract is pinned to the cache, and thus uses less gas when called
+    pub pinned: bool,
+    /// set if this contract has bound an IBC port
+    pub ibc_port: Option<String>,
+}
+
+struct FactoryQuerier {
+    contract: String,
+    storage: MockStorage,
+}
+
+impl FactoryQuerier {
+    pub fn new(contract: &Addr, token_version: &str) -> Self {
+        let mut storage = MockStorage::new();
+        FACTORY_CONTRACT
+            .save(&mut storage, &token_version.to_string())
+            .unwrap();
+
+        FactoryQuerier {
+            contract: contract.to_string(),
+            storage,
+        }
+    }
+
+    fn handle_query(&self, request: QueryRequest<Empty>) -> QuerierResult {
+        match request {
+            QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
+                self.query_wasm(contract_addr, key)
+            }
+            QueryRequest::Wasm(WasmQuery::Smart { .. }) => {
+                SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: "WasmQuery::Smart".to_string(),
+                })
+            }
+            QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr }) => {
+                self.query_contract_info(contract_addr)
+            }
+            _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                kind: "not wasm".to_string(),
+            }),
+        }
+    }
+
+    // TODO: we should be able to add a custom wasm handler to MockQuerier from cosmwasm_std::mock
+    fn query_wasm(&self, contract_addr: String, key: Binary) -> QuerierResult {
+        if contract_addr != self.contract {
+            SystemResult::Err(SystemError::NoSuchContract {
+                addr: contract_addr,
+            })
+        } else {
+            let bin = self.storage.get(&key).unwrap_or_default();
+            SystemResult::Ok(ContractResult::Ok(bin.into()))
+        }
+    }
+
+    fn query_contract_info(&self, contract_addr: String) -> QuerierResult {
+        if contract_addr != self.contract {
+            SystemResult::Err(SystemError::NoSuchContract {
+                addr: contract_addr,
+            })
+        } else {
+            let res = ContractInfoResponse {
+                code_id: 1,
+                creator: "creator".into(),
+                admin: Some(FACTORY_ADMIN.into()),
+                pinned: false,
+                ibc_port: None,
+            };
+            let bin = to_binary(&res).unwrap();
+            SystemResult::Ok(ContractResult::Ok(bin))
+        }
+    }
+}
+
+impl Querier for FactoryQuerier {
+    fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
+        let request: QueryRequest<Empty> = match from_slice(bin_request) {
+            Ok(v) => v,
+            Err(e) => {
+                return SystemResult::Err(SystemError::InvalidRequest {
+                    error: format!("Parsing query request: {:?}", e),
+                    request: bin_request.into(),
+                })
+            }
+        };
+        self.handle_query(request)
+    }
+}
 
 #[test]
 fn proper_initialization() {
@@ -125,7 +235,14 @@ fn update_config() {
 
 #[test]
 fn create_pair() {
-    let mut deps = mock_dependencies(&[]);
+    // Set and honour our local data (ContractInfo)
+    let querier = FactoryQuerier::new(&Addr::unchecked(FACTORY_ADDR), "0.9");
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier,
+        custom_query_type: PhantomData,
+    };
 
     let msg = InstantiateMsg::new(321u64, 123u64);
 
@@ -167,7 +284,7 @@ fn create_pair() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]
@@ -249,7 +366,14 @@ fn reply_test() {
 
 #[test]
 fn custom_default_commission() {
-    let mut deps = mock_dependencies(&[]);
+    // Set and honour our local data (ContractInfo)
+    let querier = FactoryQuerier::new(&Addr::unchecked(FACTORY_ADDR), "0.9");
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier,
+        custom_query_type: PhantomData,
+    };
 
     let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(5));
 
@@ -295,7 +419,7 @@ fn custom_default_commission() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]
@@ -330,7 +454,14 @@ fn invalid_custom_default_commission() {
 
 #[test]
 fn custom_pair_commission() {
-    let mut deps = mock_dependencies(&[]);
+    // Set and honour our local data (ContractInfo)
+    let querier = FactoryQuerier::new(&Addr::unchecked(FACTORY_ADDR), "0.9");
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier,
+        custom_query_type: PhantomData,
+    };
 
     let msg = InstantiateMsg::new(321u64, 123u64).with_default_commission(Decimal::permille(5));
 
@@ -378,7 +509,7 @@ fn custom_pair_commission() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]
