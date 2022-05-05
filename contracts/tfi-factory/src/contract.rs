@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Empty, Env, MessageInfo,
+    to_binary, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Env, MessageInfo,
     QueryRequest, Reply, Response, StdError, StdResult, SubMsg, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
@@ -25,7 +25,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -34,11 +34,19 @@ pub fn instantiate(
         return Err(ContractError::InvalidCommission(msg.default_commission));
     }
 
+    let contract_info_query = QueryRequest::Wasm(WasmQuery::ContractInfo {
+        contract_addr: env.contract.address.to_string(),
+    });
+    let contract_info = deps
+        .querier
+        .query::<ContractInfoResponse>(&contract_info_query)?;
+
     let config = Config {
         owner: info.sender,
         token_code_id: msg.token_code_id,
         pair_code_id: msg.pair_code_id,
         default_commission: msg.default_commission,
+        migrate_admin: contract_info.admin,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -119,7 +127,7 @@ pub fn execute_update_config(
 // Anyone can execute it to create swap pair
 pub fn execute_create_pair(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
     commission: Option<Decimal>,
@@ -148,16 +156,11 @@ pub fn execute_create_pair(
         },
     )?;
 
-    let query = QueryRequest::<Empty>::Wasm(WasmQuery::ContractInfo {
-        contract_addr: env.contract.address.to_string(),
-    });
-    let info = deps.querier.query::<ContractInfoResponse>(&query)?;
-
     let pair_name = format!("{}-{}", asset_infos[0], asset_infos[1]);
     let msg = WasmMsg::Instantiate {
         code_id: config.pair_code_id,
         funds: vec![],
-        admin: info.admin,
+        admin: config.migrate_admin,
         label: "Tgrade finance trading pair".to_string(),
         msg: to_binary(
             &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
