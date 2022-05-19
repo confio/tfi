@@ -1,17 +1,17 @@
-use crate::contract::{execute, instantiate, query, reply};
-use crate::mock_querier::mock_dependencies;
-
-use crate::error::ContractError;
-use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
-
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, Decimal, Reply, ReplyOn, StdError, SubMsg,
     SubMsgExecutionResponse, SubMsgResult, WasmMsg,
 };
+
 use tfi::asset::{AssetInfo, PairInfo};
 use tfi::factory::{ConfigResponse, ExecuteCreatePair, ExecuteMsg, InstantiateMsg, QueryMsg};
 use tfi::pair::InstantiateMsg as PairInstantiateMsg;
+
+use crate::contract::{execute, instantiate, query, reply};
+use crate::error::ContractError;
+use crate::mock_querier::{mock_dependencies, FACTORY_ADMIN};
+use crate::state::{pair_key, TmpPairInfo, TMP_PAIR_INFO};
 
 #[test]
 fn proper_initialization() {
@@ -167,7 +167,7 @@ fn create_pair() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]
@@ -295,7 +295,7 @@ fn custom_default_commission() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]
@@ -378,7 +378,7 @@ fn custom_pair_commission() {
                 code_id: 321u64,
                 funds: vec![],
                 label: "Tgrade finance trading pair".to_string(),
-                admin: None,
+                admin: Some(FACTORY_ADMIN.into()),
             }
             .into()
         },]

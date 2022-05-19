@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    to_binary, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Env, MessageInfo,
+    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, WasmMsg, WasmQuery,
 };
 use cw2::set_contract_version;
 
@@ -39,6 +39,7 @@ pub fn instantiate(
         token_code_id: msg.token_code_id,
         pair_code_id: msg.pair_code_id,
         default_commission: msg.default_commission,
+        migrate_admin: None,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -119,7 +120,7 @@ pub fn execute_update_config(
 // Anyone can execute it to create swap pair
 pub fn execute_create_pair(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
     commission: Option<Decimal>,
@@ -130,7 +131,20 @@ pub fn execute_create_pair(
         }
     }
 
-    let config: Config = CONFIG.load(deps.storage)?;
+    let mut config: Config = CONFIG.load(deps.storage)?;
+
+    if config.migrate_admin.is_none() {
+        let contract_info_query = QueryRequest::Wasm(WasmQuery::ContractInfo {
+            contract_addr: env.contract.address.to_string(),
+        });
+        let contract_info = deps
+            .querier
+            .query::<ContractInfoResponse>(&contract_info_query)?;
+
+        config.migrate_admin = Some(contract_info.admin);
+
+        CONFIG.save(deps.storage, &config)?;
+    }
 
     let pair_key = pair_key(&asset_infos);
     if let Ok(Some(_)) = PAIRS.may_load(deps.storage, &pair_key) {
@@ -152,7 +166,7 @@ pub fn execute_create_pair(
     let msg = WasmMsg::Instantiate {
         code_id: config.pair_code_id,
         funds: vec![],
-        admin: None,
+        admin: config.migrate_admin.unwrap(),
         label: "Tgrade finance trading pair".to_string(),
         msg: to_binary(
             &PairInstantiateMsg::new(asset_infos, config.token_code_id).with_commission(commission),
