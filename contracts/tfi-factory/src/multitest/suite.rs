@@ -152,6 +152,7 @@ impl Suite {
                     add: vec![Member {
                         addr: addr.to_string(),
                         points: 10,
+                        start_height: None,
                     }],
                     remove: vec![],
                 },
@@ -386,6 +387,7 @@ impl Config {
             .map(|addr| Member {
                 addr: addr.to_string(),
                 points: 10,
+                start_height: None,
             })
             .collect();
 
