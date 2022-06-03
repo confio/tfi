@@ -25,7 +25,7 @@ cosmwasm-std = "1.0.0"
 cw-storage-plus = "0.13.4"
 cw20-base = { version = "0.13.4", features = ["library"] }
 cw2 = "0.13.4"
-tg4 = "0.6.2"
+tg4 = "0.10.0"
 cw20 = "0.13.4"
 schemars = "0.8.1"
 serde = { version = "1.0.125", default-features = false, features = ["derive"] }
@@ -36,4 +36,4 @@ anyhow = "1"
 cosmwasm-schema = "1.0.0"
 cw-multi-test = "0.13.4"
 derivative = "2"
-tg4-group = { version = "0.6.2", features = ["library"] }
+tg4-group = { version = "0.10.0", features = ["library"] }
