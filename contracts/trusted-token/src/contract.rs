@@ -49,7 +49,7 @@ pub fn instantiate(
 
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
     let contract = Tg4Contract(addr.clone());
-    // verify the whitelist contract is actually cw4
+    // verify that the whitelist contract is actually tg4-compatible
     contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
 

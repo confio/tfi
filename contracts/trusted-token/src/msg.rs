@@ -14,7 +14,7 @@ pub struct InstantiateMsg {
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
     pub marketing: Option<InstantiateMarketingInfo>,
-    /// This is the address of a cw4 compatible contract that will serve as a whitelist
+    /// This is the address of a tg4 compatible contract that will serve as a whitelist
     pub whitelist_group: String,
 }
 
@@ -114,7 +114,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Returns the cw4 contract used to whitelist this token.
+    /// Returns the tg4 contract used to whitelist this token.
     /// Return type: WhitelistResponse
     Whitelist {},
     /// Returns true if the address is in the Whitelist contract.
