@@ -49,7 +49,7 @@ pub fn instantiate(
 
     let addr = deps.api.addr_validate(&msg.whitelist_group)?;
     let contract = Tg4Contract(addr.clone());
-    // verify the whitelist contract is actually cw4
+    // verify that the whitelist contract is actually tg4-compatible
     contract.list_members(&deps.querier, None, Some(1))?;
     WHITELIST.save(deps.storage, &contract)?;
 
@@ -390,11 +390,11 @@ mod tests {
     };
     use cw20_base::state::TokenInfo;
     use cw_storage_plus::Map;
-    use tg4::{MemberListResponse, Tg4QueryMsg};
+    use tg4::{MemberInfo, MemberListResponse, Tg4QueryMsg};
 
     use std::marker::PhantomData;
 
-    const MEMBERS: Map<&Addr, u64> = Map::new(tg4::MEMBERS_KEY);
+    const MEMBERS: Map<&Addr, MemberInfo> = Map::new(tg4::MEMBERS_KEY);
 
     struct GroupQuerier {
         contract: String,
@@ -405,7 +405,9 @@ mod tests {
         pub fn new(contract: &Addr, members: &[(&Addr, u64)]) -> Self {
             let mut storage = MockStorage::new();
             for (member, weight) in members {
-                MEMBERS.save(&mut storage, member, weight).unwrap();
+                MEMBERS
+                    .save(&mut storage, member, &MemberInfo::new(*weight))
+                    .unwrap();
             }
             GroupQuerier {
                 contract: contract.to_string(),

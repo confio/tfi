@@ -48,7 +48,7 @@
       "type": "string"
     },
     "whitelist_group": {
-      "description": "This is the address of a cw4 compatible contract that will serve as a whitelist",
+      "description": "This is the address of a tg4 compatible contract that will serve as a whitelist",
       "type": "string"
     }
   },

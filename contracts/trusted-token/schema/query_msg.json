@@ -3,7 +3,7 @@
   "title": "QueryMsg",
   "anyOf": [
     {
-      "description": "Returns the cw4 contract used to whitelist this token. Return type: WhitelistResponse",
+      "description": "Returns the tg4 contract used to whitelist this token. Return type: WhitelistResponse",
       "type": "object",
       "required": [
         "whitelist"

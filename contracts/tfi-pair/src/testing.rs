@@ -8,7 +8,7 @@ use crate::math::{decimal_multiplication, reverse_decimal};
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     attr, to_binary, Addr, BankMsg, Coin, CosmosMsg, Decimal, Reply, ReplyOn, Response, StdError,
-    SubMsg, SubMsgExecutionResponse, SubMsgResult, Uint128, WasmMsg,
+    SubMsg, SubMsgResponse, SubMsgResult, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use tfi::asset::{Asset, AssetInfo, PairInfo};
@@ -65,7 +65,7 @@ fn proper_initialization() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![
@@ -142,7 +142,7 @@ fn provide_liquidity() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![
@@ -497,7 +497,7 @@ fn withdraw_liquidity() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![
@@ -610,7 +610,7 @@ fn try_native_to_token() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![
@@ -772,7 +772,7 @@ fn try_token_to_native() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![
@@ -1001,7 +1001,7 @@ fn test_query_pool() {
     // store liquidity token
     let reply_msg = Reply {
         id: 1,
-        result: SubMsgResult::Ok(SubMsgExecutionResponse {
+        result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(
                 vec![

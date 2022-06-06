@@ -10,7 +10,7 @@ Only whitelisted users will be able to add liquidity to the token, and trade it.
 
 ### Instantiation
 
-Instantiate message consist additional `whitelist_group`:
+Instantiate message contains an additional `whitelist_group`:
 
 ```rust
 pub struct InstantiateMsg {
@@ -24,13 +24,13 @@ pub struct InstantiateMsg {
 }
 ```
 
-New field is the address of cw4 group contract. Only addresses being members of
+This new field is the address of tg4 group contract. Only addresses that are members of
 this group would be able to trade this token.
 
 ### Execution
 
-We override the `execute` method and check that all addresses (sender, recipient, owner if sending on someone else's behalf)
-are members of the whitelist contract before dispatching to the standard `cw20-base` action.  This looks like:
+We override the `execute` method and check that all addresses (sender, recipient, and owner if sending on someone else's behalf)
+are members of the whitelist contract, before dispatching to the standard `cw20-base` action.  This looks like:
 
 ```rust
 pub fn execute() {
@@ -41,7 +41,7 @@ pub fn execute() {
     }
     // other variants....
   };
-  // rest of code...
+  // rest of the code...
 }
 ```
 
@@ -70,9 +70,9 @@ pub(crate) fn verify_sender_and_addresses_on_whitelist(
 }
 ```
 
-Note that it just checks if the member is present in the group contract, it is unimportant what weight it has.
-This means that even 0 weight (which will not allow it to vote in voting contracts) is sufficient to pass the whitelist.
-It must be fully removed from the group contract to no longer pass the whitelisting check.
+Note that this just checks if the member is present in the group contract; it is unimportant what weight it has.
+This means that even 0 weight members (which would not allow them to vote in voting contracts) can pass the whitelist.
+A member must be fully removed from the group contract to no longer pass the whitelisting check.
 
 ## New messages
 
@@ -89,22 +89,22 @@ It must be fully removed from the group contract to no longer pass the whitelist
 }
 ```
 
-Executing redeem on this contract effectively burns owned tokens. It is intended
-to redeem tokens to provider as part of offchain transaction, typically when he
-covers burned token value in other commodity.
+Executing redeem on this contract effectively burns the owned tokens. It is intended
+to redeem tokens to the provider as part of off-chain transaction; typically when he
+covers the burned token value in another commodity.
 
-`code` field is a value agreed with token provider to perform redeem with, to
-allow him to easly identify redeem operation. Any code can be used only for single
+The `code` field is a value agreed with token provider to perform redeem with, to
+allow him to easily identify the redeem operation. A code can only be used for a single
 redeem operation.
 
-`sender` is account which requested redeem, if it is not the same who executed it.
-It is optional, and message sender is used if none is provided.
+`sender` is the account who requested `Redeem`, if it is not the same who executed it.
+It is optional, and the message sender is used if none is provided.
 
-`memo` is free text field where extra metadata or just message can be embeded.
+`memo` is a free text field where an extra metadata or message can be embedded.
 
-When `Redeem` operation is completed, infomation about it is stored in contract
-state, so it can be later queried by token provider. Also custom event is send
-to blockchain:
+When the `Redeem` operation is completed, information about it is stored in contract
+state, so that it can be later queried by the token provider. Also, a custom event is sent
+to the blockchain:
 
 ```json
 {
@@ -117,8 +117,8 @@ to blockchain:
 }
 ```
 
-To finalize off-chain redeem operation, token provider might either subscribe on
-`redeem` event, or periodically query for redeems.
+To finalize an off-chain redeem operation, the token provider might either subscribe to
+the `redeem` event, or periodically query for redeems.
 
 ### RemoveRedeems
 
@@ -133,7 +133,7 @@ To finalize off-chain redeem operation, token provider might either subscribe on
 }
 ```
 
-Removes stored redeems information related to provided redeem codes. Only minter
+Removes stored redeem information related to the provided redeem codes. Only the minter
 is allowed to do that.
 
 ### CleanRedeems
@@ -142,7 +142,7 @@ is allowed to do that.
 { "clean_redeems" : {} }
 ```
 
-Removes all stored redeems information. Only minter is allowed to do that.
+Removes all stored redeems information. Only the minter is allowed to do that.
 
 ## New queries
 
@@ -171,11 +171,11 @@ Returns:
 }
 ```
 
-Queries for single redeem information. Besides of information provided by
-`redeem` event, `timestamp` field is added to give an idea when redeem took place.
+Queries for single redeem information. Besides information provided by the
+`redeem` event, a `timestamp` field is added to give an idea of when the redeem took place.
 
-Response may be empty, not containing `redeem` field, which means, that not
-redeem was performed with this code.
+The response may be empty, not containing a `redeem` field, which means that no
+redemption was performed with this code.
 
 ### Query for all redeems
 
@@ -206,9 +206,10 @@ Returns:
 }
 ```
 
-Queries for multiple redeems information. `redeems` field may contains multiple
-entries, but up to `limit`. If `limit` is not provided, it is still possible,
-that not all redeems are returned, it may be internal cap on items returned. To
-ensure that is not a case, additional query with `start_after` set as last
-retuned redeem code. If optional `start_after` is provided, then only items after
-this item would be returned.
+Queries for multiple redeems information. The `redeems` field may contain multiple
+entries, up to `limit`. If `limit` is not provided, it is still possible
+that not all redeems are returned, as there may be an internal cap on the
+numer of returned items per query. To ensure that that is not a case, an additional query
+with `start_after` set as the last returned redeem code can be performed.
+If an optional `start_after` is provided, then only items after
+this item will be returned.

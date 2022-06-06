@@ -158,6 +158,7 @@ impl Suite {
                     add: vec![Member {
                         addr: addr.to_string(),
                         points,
+                        start_height: None,
                     }],
                     remove: vec![],
                 },
@@ -474,6 +475,7 @@ impl Config {
                 let member = Member {
                     addr: member.addr.to_string(),
                     points: member.points,
+                    start_height: None,
                 };
                 Ok((member, initial_cash))
             })
