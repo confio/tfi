@@ -1,10 +1,6 @@
 # Changelog
 
-## [Unreleased](https://github.com/confio/tfi/tree/HEAD)
-
-[Full Changelog](https://github.com/confio/tfi/compare/v0.4.0...HEAD)
-
-## [v0.4.0](https://github.com/confio/tfi/tree/v0.4.0) (2022-06-04)
+## [v0.4.0](https://github.com/confio/tfi/tree/v0.4.0) (2022-06-06)
 
 [Full Changelog](https://github.com/confio/tfi/compare/v0.3.2...v0.4.0)
 
