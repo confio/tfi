@@ -25,10 +25,10 @@ backtraces = ["cosmwasm-std/backtraces"]
 [dependencies]
 integer-sqrt = "0.1.5"
 tfi = { path = "../../packages/tfi", default-features = false, version = "0.4.0"}
-cw2 = "0.13.4"
-cw20 = "0.13.4"
+cw2 = "0.14.0"
+cw20 = "0.14.0"
 cosmwasm-std = "1.0.0"
-cw-storage-plus = "0.13.4"
+cw-storage-plus = "0.14.0"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.20" }
@@ -36,8 +36,8 @@ thiserror = { version = "1.0.20" }
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
 cosmwasm-storage = "1.0.0"
-cw20-base = { version = "0.13.4", features = ["library"] }
-cw-multi-test = "0.13.4"
+cw20-base = { version = "0.14.0", features = ["library"] }
+cw-multi-test = "0.14.0"
 tfi-mocks = { path = "../../packages/mocks", version = "0.4.0"}
 derivative = "2"
 anyhow = { version = "1", features = ["backtrace"] }

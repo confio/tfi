@@ -7,7 +7,7 @@ use cw20_base::allowances::query_allowance;
 use cw20_base::contract::{
     query_balance, query_download_logo, query_marketing_info, query_minter, query_token_info,
 };
-use cw20_base::enumerable::{query_all_accounts, query_all_allowances};
+use cw20_base::enumerable::{query_all_accounts, query_owner_allowances};
 use cw20_base::state::{BALANCES, TOKEN_INFO};
 use cw20_base::ContractError as Cw20ContractError;
 use cw_storage_plus::Bound;
@@ -367,7 +367,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             owner,
             start_after,
             limit,
-        } => to_binary(&query_all_allowances(deps, owner, start_after, limit)?),
+        } => to_binary(&query_owner_allowances(deps, owner, start_after, limit)?),
         QueryMsg::AllAccounts { start_after, limit } => {
             to_binary(&query_all_accounts(deps, start_after, limit)?)
         }
