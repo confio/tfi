@@ -25,8 +25,8 @@ backtraces = ["cosmwasm-std/backtraces"]
 [dependencies]
 tfi = { path = "../../packages/tfi", default-features = false, version = "0.4.0"}
 cosmwasm-std = "1.0.0"
-cw2 = "0.13.4"
-cw-storage-plus = "0.13.4"
+cw2 = "0.14.0"
+cw-storage-plus = "0.14.0"
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 protobuf = { version = "2", features = ["with-bytes"] }
@@ -36,11 +36,11 @@ thiserror = "1"
 cosmwasm-schema = "1.0.0"
 cosmwasm-storage = "1.0.0"
 anyhow = { version = "1", features = ["backtrace"] }
-cw-multi-test = "0.13.4"
+cw-multi-test = "0.14.0"
 tfi-pair = { path = "../tfi-pair", version = "0.4.0" }
 trusted-token = { path = "../trusted-token", version = "0.4.0" }
 derivative = "2"
 tg4 = "0.10.0"
 tg4-group = { version = "0.10.0", features = ["library"] }
-cw20 = "0.13.4"
-cw20-base = { version = "0.13.4", features = ["library"] }
+cw20 = "0.14.0"
+cw20-base = { version = "0.14.0", features = ["library"] }

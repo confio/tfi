@@ -16,7 +16,7 @@ homepage = "https://tgrade.finance"
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cw20 = "0.13.4"
+cw20 = "0.14.0"
 cosmwasm-storage = "1.0.0"
 cosmwasm-std = "1.0.0"
 schemars = "0.8.1"
