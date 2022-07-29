@@ -1,7 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Decimal, Order, StdResult, Storage};
+use crate::querier::query_migrate_admin;
+use cosmwasm_std::{Addr, Decimal, DepsMut, Env, Order, StdResult, Storage};
 use cw_storage_plus::{Bound, Item, Map};
 use tfi::asset::{AssetInfo, PairInfo};
 
@@ -17,6 +18,18 @@ pub struct Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
+
+pub fn load_update_config(deps: DepsMut, env: &Env) -> StdResult<Config> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+
+    if config.migrate_admin.is_none() {
+        let migrate_admin = query_migrate_admin(deps.as_ref(), env)?;
+        config.migrate_admin = Some(migrate_admin);
+
+        CONFIG.save(deps.storage, &config)?;
+    }
+    Ok(config)
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct TmpPairInfo {
@@ -38,6 +51,7 @@ pub fn pair_key(asset_infos: &[AssetInfo; 2]) -> Vec<u8> {
 // settings for pagination
 const MAX_LIMIT: u32 = 30;
 const DEFAULT_LIMIT: u32 = 10;
+
 pub fn read_pairs(
     storage: &dyn Storage,
     start_after: Option<[AssetInfo; 2]>,

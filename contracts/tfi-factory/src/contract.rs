@@ -1,15 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Env, MessageInfo,
-    QueryRequest, Reply, Response, StdError, StdResult, SubMsg, WasmMsg, WasmQuery,
+    to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::querier::query_liquidity_token;
+use crate::querier::{query_liquidity_token, query_migrate_admin};
 use crate::response::MsgInstantiateContractResponse;
-use crate::state::{pair_key, read_pairs, Config, TmpPairInfo, CONFIG, PAIRS, TMP_PAIR_INFO};
+use crate::state::{
+    load_update_config, pair_key, read_pairs, Config, TmpPairInfo, CONFIG, PAIRS, TMP_PAIR_INFO,
+};
 
 use protobuf::Message;
 use tfi::asset::{AssetInfo, PairInfo};
@@ -79,15 +81,15 @@ pub fn execute(
 
 // Only owner can execute it
 pub fn execute_update_config(
-    deps: DepsMut,
-    _env: Env,
+    mut deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     owner: Option<String>,
     token_code_id: Option<u64>,
     pair_code_id: Option<u64>,
     default_commission: Option<Decimal>,
 ) -> StdResult<Response> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
+    let mut config = load_update_config(deps.branch(), &env)?;
 
     // permission check
     if info.sender != config.owner {
@@ -119,7 +121,7 @@ pub fn execute_update_config(
 
 // Anyone can execute it to create swap pair
 pub fn execute_create_pair(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     _info: MessageInfo,
     asset_infos: [AssetInfo; 2],
@@ -131,20 +133,7 @@ pub fn execute_create_pair(
         }
     }
 
-    let mut config: Config = CONFIG.load(deps.storage)?;
-
-    if config.migrate_admin.is_none() {
-        let contract_info_query = QueryRequest::Wasm(WasmQuery::ContractInfo {
-            contract_addr: env.contract.address.to_string(),
-        });
-        let contract_info = deps
-            .querier
-            .query::<ContractInfoResponse>(&contract_info_query)?;
-
-        config.migrate_admin = Some(contract_info.admin);
-
-        CONFIG.save(deps.storage, &config)?;
-    }
+    let config = load_update_config(deps.branch(), &env)?;
 
     let pair_key = pair_key(&asset_infos);
     if let Ok(Some(_)) = PAIRS.may_load(deps.storage, &pair_key) {
@@ -210,9 +199,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Config {} => to_binary(&query_config(deps, &env)?),
         QueryMsg::Pair { asset_infos } => to_binary(&query_pair(deps, asset_infos)?),
         QueryMsg::Pairs { start_after, limit } => {
             to_binary(&query_pairs(deps, start_after, limit)?)
@@ -220,16 +209,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
+pub fn query_config(deps: Deps, env: &Env) -> StdResult<ConfigResponse> {
     let state: Config = CONFIG.load(deps.storage)?;
-    let resp = ConfigResponse {
+
+    let migrate_admin = match state.migrate_admin {
+        Some(migrate_admin) => migrate_admin,
+        None => query_migrate_admin(deps, env)?,
+    };
+
+    Ok(ConfigResponse {
         owner: state.owner.into(),
         token_code_id: state.token_code_id,
         pair_code_id: state.pair_code_id,
         default_commission: state.default_commission,
-    };
-
-    Ok(resp)
+        migrate_admin,
+    })
 }
 
 pub fn query_pair(deps: Deps, asset_infos: [AssetInfo; 2]) -> StdResult<PairInfo> {
