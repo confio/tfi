@@ -12,6 +12,12 @@
     "default_commission": {
       "$ref": "#/definitions/Decimal"
     },
+    "migrate_admin": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "owner": {
       "type": "string"
     },

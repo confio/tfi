@@ -150,6 +150,7 @@ pub struct ConfigResponse {
     pub pair_code_id: u64,
     pub token_code_id: u64,
     pub default_commission: Decimal,
+    pub migrate_admin: Option<String>,
 }
 
 /// We currently take no arguments for migrations
